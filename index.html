@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Band Gigs</title>
+  <style>
+:root {
+  --bg: #0c0d10;
+  --bg-elev: #15171c;
+  --bg-elev-2: #1c1f26;
+  --line: #2a2e38;
+  --text: #f3f4f6;
+  --muted: #9aa3b2;
+  --accent: #e8b84a;
+  --accent-2: #f3d27a;
+  --gig: #3dd68c;
+  --rehearsal: #5b8cff;
+  --booked: #ff6b6b;
+  --available: #3dd68c;
+  --danger: #ff6b6b;
+  --radius: 14px;
+  --shadow: 0 18px 40px rgba(0,0,0,.35);
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); min-height: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+.app { max-width: 1180px; margin: 0 auto; padding: 18px 16px 80px; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 0 18px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo {
+  min-width: 42px; height: 38px; padding: 0 7px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #c4841a);
+  display: grid; place-items: center; font-weight: 800; color: #1a1404;
+  font-size: 11px; letter-spacing: .04em;
+}
+.brand h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+.brand small { color: var(--muted); display: block; font-size: 11px; }
+
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pill, .btn {
+  border: 1px solid var(--line); background: var(--bg-elev);
+  border-radius: 999px; padding: 8px 12px;
+}
+.btn-primary {
+  background: var(--accent); color: #1a1404; border-color: transparent; font-weight: 700;
+}
+.btn-ghost { background: transparent; }
+.btn-danger { background: #3a1518; border-color: #5a2226; color: #ffb4b4; }
+
+.layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 14px;
+}
+
+.band-switch label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.band-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.band-item {
+  text-align: left; border: 1px solid var(--line); background: var(--bg-elev-2);
+  border-radius: 12px; padding: 10px 12px;
+}
+.band-item.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.band-item b { display: block; }
+.band-item span { color: var(--muted); font-size: 12px; }
+
+.legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 10px 0; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.dot.gig { background: var(--gig); }
+.dot.reh { background: var(--rehearsal); }
+.dot.booked { background: var(--booked); }
+
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-head h2 { margin: 0; font-size: 22px; }
+.weekdays, .days {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+.weekdays { margin: 12px 0 6px; color: var(--muted); font-size: 11px; text-transform: uppercase; }
+.day {
+  min-height: 92px; border: 1px solid var(--line); background: #12141a;
+  border-radius: 10px; padding: 6px; text-align: left;
+}
+.day.out { opacity: .35; }
+.day.today { outline: 1px solid var(--accent); }
+.day .n { font-size: 12px; color: var(--muted); }
+.chip {
+  display: block; font-size: 10px; border-radius: 6px; padding: 2px 4px; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chip.gig { background: rgba(61,214,140,.15); color: var(--gig); }
+.chip.rehearsal { background: rgba(91,140,255,.15); color: var(--rehearsal); }
+.avail-mark { font-size: 10px; margin-top: 4px; }
+.avail-mark.AVAILABLE { color: var(--available); }
+.avail-mark.UNAVAILABLE { color: var(--booked); }
+.glance { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+
+.event-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.event {
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--bg-elev-2);
+}
+.event h3 { margin: 0 0 4px; font-size: 15px; }
+.meta { color: var(--muted); font-size: 12px; }
+
+.modal-back {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  display: none; align-items: flex-end; justify-content: center; padding: 16px; z-index: 20;
+}
+.modal-back.open { display: flex; }
+.modal {
+  width: min(560px, 100%); background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 18px; padding: 16px; box-shadow: var(--shadow); max-height: 90vh; overflow: auto;
+}
+.form-row { display: grid; gap: 6px; margin-bottom: 10px; }
+.form-row input, .form-row select, .form-row textarea {
+  background: #101217; border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+
+.toast-wrap { position: fixed; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 30; }
+.toast {
+  background: #22262f; border: 1px solid var(--line); padding: 10px 12px; border-radius: 12px;
+  min-width: 240px; box-shadow: var(--shadow);
+}
+.toast b { color: var(--accent); }
+
+.activity { max-height: 220px; overflow: auto; font-size: 12px; color: var(--muted); }
+.activity div { padding: 6px 0; border-bottom: 1px solid var(--line); }
+
+.auth {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px;
+}
+.auth-card { width: min(420px, 100%); }
+.hint { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+  <div id="authScreen" class="auth">
+    <div class="card auth-card">
+      <div class="brand" style="margin-bottom:14px">
+        <div class="logo">MBG</div>
+        <div>
+          <h1>My Band Gigs</h1>
+          <small>Gigs, rehearsals, who’s available</small>
+        </div>
+      </div>
+      <p class="hint">Prototype login. Type your name (try Roger, Andrea, Steve, or Joshua) or enter a new name to join both demo bands.</p>
+      <div class="form-row">
+        <label>Name</label>
+        <input id="loginName" value="Roger" />
+      </div>
+      <button class="btn btn-primary" id="loginBtn">Open calendars</button>
+    </div>
+  </div>
+
+  <div id="appScreen" class="app" style="display:none">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">MBG</div>
+        <div>
+          <h1>My Band Gigs</h1>
+          <small id="bandName"></small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="pill" id="who"></span>
+        <button class="btn" id="enablePush">Enable alerts</button>
+        <button class="btn btn-ghost" id="logoutBtn">Log out</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside>
+        <div class="card band-switch">
+          <label>Your bands</label>
+          <div id="bandList" class="band-list"></div>
+          <button class="btn" id="addBandBtn" style="margin-top:10px;width:100%">+ Add band</button>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Members</label>
+          <div id="members" style="margin-top:8px"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Alerts</label>
+          <div id="activity" class="activity"></div>
+        </div>
+      </aside>
+
+      <main>
+        <div class="card">
+          <div class="cal-head">
+            <button class="btn" id="prevMonth">‹</button>
+            <h2 id="monthLabel"></h2>
+            <button class="btn" id="nextMonth">›</button>
+          </div>
+          <div class="legend">
+            <span><i class="dot gig"></i>Gig</span>
+            <span><i class="dot reh"></i>Rehearsal</span>
+            <span><i class="dot booked"></i>Unavailable</span>
+            <button class="btn btn-primary" id="addEventBtn">Add event</button>
+          </div>
+          <div class="weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div id="days" class="days"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Upcoming</label>
+          <div id="upcoming" class="event-list"></div>
+          <button class="btn btn-ghost" id="resetDemo" style="margin-top:10px">Reset demo data</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-back" id="eventModal">
+    <div class="modal">
+      <h2 id="modalTitle" style="margin-top:0">Event</h2>
+      <div class="form-row" id="bandPickRow">
+        <label>Band</label>
+        <select id="evBand"></select>
+      </div>
+      <div class="form-row">
+        <label>Title</label>
+        <input id="evTitle" placeholder="Venue or rehearsal name" />
+      </div>
+      <div class="row2">
+        <div class="form-row">
+          <label>Type</label>
+          <select id="evType">
+            <option value="gig">Gig</option>
+            <option value="rehearsal">Rehearsal</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Date (yyyy-mm-dd stored, shown as mm/dd/yyyy)</label>
+          <input id="evDate" type="date" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="form-row">
+          <label>Start (12-hour)</label>
+          <input id="evStart" placeholder="7:00 PM" />
+        </div>
+        <div class="form-row">
+          <label>End (12-hour)</label>
+          <input id="evEnd" placeholder="10:00 PM" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Venue / location</label>
+        <input id="evVenue" />
+      </div>
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea id="evNotes" rows="3"></textarea>
+      </div>
+      <div class="form-row">
+        <label>My status this date</label>
+        <select id="evAvail">
+          <option value="AVAILABLE">AVAILABLE</option>
+          <option value="UNAVAILABLE">UNAVAILABLE</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" id="cancelEvent">Cancel</button>
+        <button class="btn btn-primary" id="saveEvent">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+  <script>
+const STORAGE_KEY = "bandcal.v2";
+
+const seed = {
+  currentUserId: "u1",
+  users: [
+    { id: "u1", name: "Roger", email: "roger@example.com" },
+    { id: "u2", name: "Andrea", email: "andrea@example.com" },
+    { id: "u3", name: "Steve", email: "steve@example.com" },
+    { id: "u4", name: "Joshua", email: "joshua@example.com" }
+  ],
+  bands: [
+    { id: "b1", name: "The Heart of Rock & Roll", short: "THoRR" },
+    { id: "b2", name: "Retro Revolution", short: "Retro" }
+  ],
+  memberships: [
+    { userId: "u1", bandId: "b1", role: "admin" },
+    { userId: "u2", bandId: "b1", role: "member" },
+    { userId: "u3", bandId: "b1", role: "member" },
+    { userId: "u1", bandId: "b2", role: "admin" },
+    { userId: "u2", bandId: "b2", role: "member" },
+    { userId: "u4", bandId: "b2", role: "member" }
+  ],
+  currentBandId: "all",
+  events: [
+    {
+      id: "e1", bandId: "b1", type: "gig", title: "City Winery",
+      date: "2026-09-12", start: "19:00", end: "22:00",
+      venue: "City Winery", notes: "Load-in 5:00 PM"
+    },
+    {
+      id: "e2", bandId: "b1", type: "rehearsal", title: "Rehearsal",
+      date: "2026-09-09", start: "18:00", end: "21:00",
+      venue: "Rehearsal room", notes: ""
+    },
+    {
+      id: "e3", bandId: "b2", type: "gig", title: "Casino patio",
+      date: "2026-09-19", start: "20:00", end: "23:00",
+      venue: "Laughlin", notes: ""
+    }
+  ],
+  availability: {
+    "b1:u2:2026-09-12": "UNAVAILABLE"
+  },
+  activity: [],
+  viewYear: 2026,
+  viewMonth: 8
+};
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(seed);
+    return JSON.parse(raw);
+  } catch {
+    return structuredClone(seed);
+  }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = load();
+let editingEventId = null;
+let selectedDate = null;
+
+const $ = (id) => document.getElementById(id);
+
+function currentUser() {
+  return state.users.find(u => u.id === state.currentUserId);
+}
+function currentBand() {
+  if (state.currentBandId === "all") return { id: "all", name: "All bands", short: "All" };
+  return state.bands.find(b => b.id === state.currentBandId);
+}
+function myBandIds() {
+  return state.memberships
+    .filter(m => m.userId === state.currentUserId)
+    .map(m => m.bandId);
+}
+function isMergedView() {
+  return state.currentBandId === "all";
+}
+function isAdmin() {
+  if (isMergedView()) {
+    return myBandIds().some(id =>
+      state.memberships.some(m => m.userId === state.currentUserId && m.bandId === id && m.role === "admin")
+    );
+  }
+  return state.memberships.some(m =>
+    m.userId === state.currentUserId && m.bandId === state.currentBandId && m.role === "admin"
+  );
+}
+function firstName(user) {
+  return (user?.name || "?").split(" ")[0];
+}
+function bandMembers(bandId) {
+  if (bandId === "all") {
+    const ids = new Set();
+    return myBandIds().flatMap(id =>
+      state.memberships
+        .filter(m => m.bandId === id)
+        .map(m => {
+          if (ids.has(m.userId)) return null;
+          ids.add(m.userId);
+          return { ...m, user: state.users.find(u => u.id === m.userId) };
+        })
+        .filter(Boolean)
+    );
+  }
+  return state.memberships
+    .filter(m => m.bandId === bandId)
+    .map(m => ({ ...m, user: state.users.find(u => u.id === m.userId) }));
+}
+function eventsForBand(bandId) {
+  const ids = bandId === "all" ? myBandIds() : [bandId];
+  return state.events
+    .filter(e => ids.includes(e.bandId))
+    .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+}
+function bandShort(bandId) {
+  return state.bands.find(b => b.id === bandId)?.short || "";
+}
+function getAvail(bandId, userId, iso) {
+  if (bandId === "all") {
+    const marks = myBandIds().map(id => state.availability[`${id}:${userId}:${iso}`]);
+    if (marks.includes("UNAVAILABLE")) return "UNAVAILABLE";
+    return "AVAILABLE";
+  }
+  return state.availability[`${bandId}:${userId}:${iso}`] || "AVAILABLE";
+}
+
+function pad(n) { return String(n).padStart(2, "0"); }
+function toISODate(y, m, d) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
+function formatMDY(iso) {
+  const [y, m, d] = iso.split("-");
+  return `${m}/${d}/${y}`;
+}
+function formatTime24to12(hhmm) {
+  if (!hhmm) return "";
+  let [h, min] = hhmm.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${pad(min)} ${ampm}`;
+}
+function parse12to24(str) {
+  const m = String(str).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return "18:00";
+  let h = Number(m[1]);
+  const min = m[2];
+  const ap = m[3].toUpperCase();
+  if (ap === "AM") h = h % 12;
+  else h = (h % 12) + 12;
+  return `${pad(h)}:${min}`;
+}
+
+function toast(title, body) {
+  const wrap = $("toasts");
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.innerHTML = `<b>${title}</b><div>${body}</div>`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification(title, { body }); } catch {}
+  }
+}
+
+function logActivity(message) {
+  state.activity.unshift({
+    id: crypto.randomUUID(),
+    at: new Date().toISOString(),
+    bandId: state.currentBandId,
+    message
+  });
+  state.activity = state.activity.slice(0, 40);
+}
+
+function notifyEventChange(kind, ev) {
+  const band = state.bands.find(b => b.id === ev.bandId);
+  const msg = `${kind}: ${ev.title} — ${formatMDY(ev.date)} ${formatTime24to12(ev.start)} (${band.short})`;
+  logActivity(msg);
+  save();
+  toast("Calendar update", msg);
+}
+
+function renderAuth() {
+  const logged = !!state.currentUserId;
+  $("authScreen").style.display = logged ? "none" : "grid";
+  $("appScreen").style.display = logged ? "block" : "none";
+}
+
+function renderBands() {
+  const mine = state.memberships.filter(m => m.userId === state.currentUserId);
+  const allCount = eventsForBand("all").length;
+  const allBtn = `<button class="band-item ${isMergedView() ? "active" : ""}" data-band="all">
+      <b>All bands</b><span>Merged calendar · ${allCount} events</span>
+    </button>`;
+  $("bandList").innerHTML = allBtn + mine.map(m => {
+    const b = state.bands.find(x => x.id === m.bandId);
+    const count = eventsForBand(b.id).length;
+    return `<button class="band-item ${b.id === state.currentBandId ? "active" : ""}" data-band="${b.id}">
+      <b>${b.name}</b><span>${b.short} · ${count} events · ${m.role}</span>
+    </button>`;
+  }).join("");
+}
+
+function renderCalendar() {
+  const y = state.viewYear;
+  const m = state.viewMonth;
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const monthName = first.toLocaleString("en-US", { month: "long", year: "numeric" });
+  $("monthLabel").textContent = monthName;
+
+  const events = eventsForBand(state.currentBandId);
+  const cells = [];
+  for (let i = 0; i < startDow; i++) {
+    const prev = new Date(y, m, -startDow + i + 1);
+    cells.push({ date: prev, out: true });
+  }
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ date: new Date(y, m, d), out: false });
+  while (cells.length % 7) {
+    const last = cells[cells.length - 1].date;
+    const n = new Date(last); n.setDate(n.getDate() + 1);
+    cells.push({ date: n, out: true });
+  }
+
+  const todayISO = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  $("days").innerHTML = cells.map(({ date, out }) => {
+    const iso = toISODate(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayEvents = events.filter(e => e.date === iso);
+    const roster = bandMembers(state.currentBandId);
+    let availHtml = "";
+    if (isAdmin()) {
+      const outNames = roster
+        .filter(m => getAvail(state.currentBandId, m.user.id, iso) === "UNAVAILABLE")
+        .map(m => firstName(m.user));
+      const inCount = roster.length - outNames.length;
+      availHtml = `<div class="glance">
+        <span class="avail-mark AVAILABLE">${inCount} in</span>
+        ${outNames.length ? `<span class="avail-mark UNAVAILABLE">${outNames.join(", ")} out</span>` : ""}
+      </div>`;
+    } else {
+      const avail = getAvail(state.currentBandId, state.currentUserId, iso);
+      availHtml = `<div class="avail-mark ${avail}">${avail === "UNAVAILABLE" ? "Out" : "In"}</div>`;
+    }
+    return `<button class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""}" data-date="${iso}">
+      <div class="n">${date.getDate()}</div>
+      ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}">${isMergedView() ? bandShort(e.bandId) + " · " : ""}${e.title}</span>`).join("")}
+      ${availHtml}
+    </button>`;
+  }).join("");
+}
+
+function renderUpcoming() {
+  const today = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const upcoming = eventsForBand(state.currentBandId).filter(e => e.date >= today).slice(0, 8);
+  $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
+    <div class="event">
+      <h3>${e.title}</h3>
+      <div class="meta">${bandShort(e.bandId)} · ${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
+      <div class="meta">${e.venue || "Venue TBD"}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" data-edit="${e.id}">Edit</button>
+        <button class="btn btn-danger" data-del="${e.id}">Delete</button>
+      </div>
+    </div>
+  `).join("") : `<div class="hint">No upcoming events for this band.</div>`;
+}
+
+function renderMembers() {
+  const members = bandMembers(state.currentBandId);
+  $("members").innerHTML = members.map(m =>
+    `<div class="meta">${m.user.name} · ${m.role}${m.user.id === state.currentUserId ? " (you)" : ""}</div>`
+  ).join("");
+}
+
+function renderActivity() {
+  const items = state.activity.filter(a => a.bandId === state.currentBandId).slice(0, 12);
+  $("activity").innerHTML = items.length
+    ? items.map(a => `<div>${formatMDY(a.at.slice(0,10))} · ${a.message}</div>`).join("")
+    : `<div>No alerts yet.</div>`;
+}
+
+function renderAll() {
+  renderAuth();
+  if (!state.currentUserId) return;
+  $("who").textContent = currentUser().name;
+  $("bandName").textContent = currentBand().name;
+  renderBands();
+  renderCalendar();
+  renderUpcoming();
+  renderMembers();
+  renderActivity();
+}
+
+function openEventModal(dateISO, eventId) {
+  editingEventId = eventId || null;
+  selectedDate = dateISO;
+  const ev = state.events.find(e => e.id === eventId);
+  $("modalTitle").textContent = ev ? "Edit event" : "Add gig or rehearsal";
+  const bandSelect = $("evBand");
+  bandSelect.innerHTML = myBandIds().map(id => {
+    const b = state.bands.find(x => x.id === id);
+    return `<option value="${b.id}">${b.name}</option>`;
+  }).join("");
+  bandSelect.value = ev?.bandId || (isMergedView() ? myBandIds()[0] : state.currentBandId);
+  $("evTitle").value = ev?.title || "";
+  $("evType").value = ev?.type || "gig";
+  $("evDate").value = ev?.date || dateISO || toISODate(state.viewYear, state.viewMonth, 1);
+  $("evStart").value = ev ? formatTime24to12(ev.start) : "7:00 PM";
+  $("evEnd").value = ev ? formatTime24to12(ev.end) : "10:00 PM";
+  $("evVenue").value = ev?.venue || "";
+  $("evNotes").value = ev?.notes || "";
+  const iso = ev?.date || dateISO;
+  const bandForAvail = ev?.bandId || (isMergedView() ? myBandIds()[0] : state.currentBandId);
+  $("evAvail").value = getAvail(bandForAvail, state.currentUserId, iso);
+  $("eventModal").classList.add("open");
+}
+
+function closeModal() {
+  $("eventModal").classList.remove("open");
+  editingEventId = null;
+}
+
+function saveEvent() {
+  const date = $("evDate").value;
+  const payload = {
+    bandId: $("evBand").value || (isMergedView() ? myBandIds()[0] : state.currentBandId),
+    type: $("evType").value,
+    title: $("evTitle").value.trim() || ($("evType").value === "gig" ? "Gig" : "Rehearsal"),
+    date,
+    start: parse12to24($("evStart").value),
+    end: parse12to24($("evEnd").value),
+    venue: $("evVenue").value.trim(),
+    notes: $("evNotes").value.trim()
+  };
+  if (editingEventId) {
+    const idx = state.events.findIndex(e => e.id === editingEventId);
+    state.events[idx] = { ...state.events[idx], ...payload };
+    notifyEventChange("Changed", state.events[idx]);
+  } else {
+    const ev = { id: crypto.randomUUID(), ...payload };
+    state.events.push(ev);
+    notifyEventChange("Added", ev);
+  }
+  const avail = $("evAvail").value || "AVAILABLE";
+  const key = `${payload.bandId}:${state.currentUserId}:${date}`;
+  if (avail === "AVAILABLE") delete state.availability[key];
+  else state.availability[key] = "UNAVAILABLE";
+  save();
+  closeModal();
+  renderAll();
+}
+
+function deleteEvent(id) {
+  const ev = state.events.find(e => e.id === id);
+  if (!ev) return;
+  if (!confirm(`Delete "${ev.title}" on ${formatMDY(ev.date)}?`)) return;
+  state.events = state.events.filter(e => e.id !== id);
+  notifyEventChange("Deleted", ev);
+  save();
+  renderAll();
+}
+
+function bind() {
+  $("loginBtn").onclick = () => {
+    const name = $("loginName").value.trim() || "Roger";
+    let user = state.users.find(u => u.name.toLowerCase() === name.toLowerCase());
+    if (!user) {
+      user = { id: crypto.randomUUID(), name, email: "" };
+      state.users.push(user);
+      state.bands.forEach(b => state.memberships.push({ userId: user.id, bandId: b.id, role: "member" }));
+    }
+    state.currentUserId = user.id;
+    save();
+    renderAll();
+  };
+  $("logoutBtn").onclick = () => {
+    state.currentUserId = null;
+    save();
+    renderAll();
+  };
+  $("prevMonth").onclick = () => {
+    state.viewMonth--;
+    if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+    save(); renderCalendar();
+  };
+  $("nextMonth").onclick = () => {
+    state.viewMonth++;
+    if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+    save(); renderCalendar();
+  };
+  $("addEventBtn").onclick = () => openEventModal(toISODate(state.viewYear, state.viewMonth, new Date().getDate()));
+  $("addBandBtn").onclick = () => {
+    const name = prompt("New band name?");
+    if (!name) return;
+    const band = { id: crypto.randomUUID(), name, short: name.slice(0, 12) };
+    state.bands.push(band);
+    state.memberships.push({ userId: state.currentUserId, bandId: band.id, role: "admin" });
+    state.currentBandId = band.id;
+    save(); renderAll();
+  };
+  $("enablePush").onclick = async () => {
+    if (!("Notification" in window)) return alert("This browser does not support notifications.");
+    const perm = await Notification.requestPermission();
+    toast("Alerts", perm === "granted" ? "Push alerts enabled on this device." : "Permission was not granted.");
+  };
+  $("resetDemo").onclick = () => {
+    if (!confirm("Reset demo data?")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = load();
+    renderAll();
+  };
+  $("bandList").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-band]");
+    if (!btn) return;
+    state.currentBandId = btn.dataset.band;
+    save(); renderAll();
+  });
+  $("days").addEventListener("click", (e) => {
+    const day = e.target.closest("[data-date]");
+    if (!day) return;
+    const iso = day.dataset.date;
+    const existing = eventsForBand(state.currentBandId).find(ev => ev.date === iso);
+    openEventModal(iso, existing?.id);
+  });
+  $("upcoming").addEventListener("click", (e) => {
+    if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
+    if (e.target.dataset.del) deleteEvent(e.target.dataset.del);
+  });
+  $("saveEvent").onclick = saveEvent;
+  $("cancelEvent").onclick = closeModal;
+  $("eventModal").addEventListener("click", (e) => {
+    if (e.target.id === "eventModal") closeModal();
+  });
+}
+
+bind();
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: my-band-gigs
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: .
