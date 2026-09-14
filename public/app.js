@@ -168,6 +168,14 @@ function renderMembers() {
   $("members").innerHTML = bandMembers(state.currentBandId).map(m =>
     `<div class="meta">${m.user.name} · ${m.role}${m.user.id === state.currentUserId ? " (you)" : ""}</div>`
   ).join("") || `<div class="meta">No members yet.</div>`;
+  const adminBands = state.bands.filter(b =>
+    state.memberships.some(m => m.userId === state.currentUserId && m.bandId === b.id && m.role === "admin")
+  );
+  if ($("inviteBands")) {
+    $("inviteBands").innerHTML = adminBands.map(b =>
+      `<label style="display:block;margin:4px 0"><input type="checkbox" class="invite-band" value="${b.id}" checked> ${b.name}</label>`
+    ).join("") || "Create a band first.";
+  }
 }
 
 function renderActivity() {
@@ -275,20 +283,39 @@ $("addBandBtn").onclick = async () => {
 };
 $("inviteBtn").onclick = async () => {
   try {
-    const bandId = isMergedView() ? myBandIds()[0] : state.currentBandId;
-    const data = await api("/api/invites", { method: "POST", body: { email: $("inviteEmail").value, bandId } });
+    const bandIds = [...document.querySelectorAll(".invite-band:checked")].map(el => el.value);
+    const data = await api("/api/members", {
+      method: "POST",
+      body: { name: $("inviteName").value, email: $("inviteEmail").value, bandIds }
+    });
     const url = location.origin + data.link;
     $("inviteOut").textContent = "Send this link: " + url;
     navigator.clipboard?.writeText(url);
-    toast("Invite link copied");
+    toast("Member added. Link copied.");
+    await loadState();
   } catch (err) { toast(err.message); }
 };
 
 (async function boot() {
   const hash = new URLSearchParams(location.hash.slice(1));
+  const setup = hash.get("setup");
   const invite = hash.get("invite");
-  if (token) {
+  if (setup) {
+    $("authHint").textContent = "Set a password (6+ characters) and tap Sign in to finish joining your bands.";
+    $("loginBtn").textContent = "Set password & enter";
+    $("signupBtn").style.display = "none";
+    const oldLogin = $("loginBtn").onclick;
+    $("loginBtn").onclick = async () => {
+      try {
+        const data = await api("/api/setup", { method: "POST", body: { token: setup, password: $("loginPass").value } });
+        token = data.token; localStorage.setItem("mbg.token", token);
+        location.hash = "";
+        await loadState();
+      } catch (err) { toast(err.message); }
+    };
+  }
+  if (token && !setup) {
     try { await loadState(); } catch { token = ""; localStorage.removeItem("mbg.token"); renderAuth(); }
   } else renderAuth();
-  if (invite) $("authHint").textContent = "You have an invite. Create an account with the invited email, then we’ll add you to the band.";
+  if (invite && !setup) $("authHint").textContent = "You have an invite. Create an account with the invited email.";
 })();

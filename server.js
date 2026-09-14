@@ -3,7 +3,22 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
+
+const PUBLIC_DIR = [
+  path.join(__dirname, "public"),
+  path.join(process.cwd(), "public"),
+  path.join(__dirname, "mybandgigs-app", "public"),
+  path.join(process.cwd(), "mybandgigs-app", "public"),
+  __dirname,
+  process.cwd()
+].find(dir => fs.existsSync(path.join(dir, "index.html")));
+
+console.log("cwd=", process.cwd(), "dirname=", __dirname, "PUBLIC_DIR=", PUBLIC_DIR || "NOT FOUND");
+try { console.log("root files=", fs.readdirSync(process.cwd()).join(", ")); } catch (e) {}
+if (!PUBLIC_DIR) console.error("Missing index.html. Unzip first — do not upload the .zip file itself.");
+
 
 const PORT = process.env.PORT || 10000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
@@ -21,7 +36,7 @@ const pool = new Pool({
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+if (PUBLIC_DIR) app.use(express.static(PUBLIC_DIR));
 
 function id() {
   return crypto.randomUUID();
@@ -72,6 +87,7 @@ async function initDb() {
       message TEXT NOT NULL,
       at TIMESTAMPTZ DEFAULT NOW()
     );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS setup_token TEXT;
     CREATE TABLE IF NOT EXISTS invites (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
@@ -342,6 +358,70 @@ app.post("/api/availability", auth, async (req, res) => {
   }
 });
 
+app.post("/api/members", auth, async (req, res) => {
+  try {
+    const name = (req.body.name || "").trim();
+    const email = (req.body.email || "").trim().toLowerCase();
+    let bandIds = Array.isArray(req.body.bandIds) ? req.body.bandIds.filter(Boolean) : [];
+    if (!bandIds.length && req.body.bandId) bandIds = [req.body.bandId];
+    if (!name || !email) return res.status(400).json({ error: "Name and email required" });
+    if (!bandIds.length) return res.status(400).json({ error: "Pick at least one band" });
+    for (const bid of bandIds) {
+      if (!(await isAdminOf(req.user.id, bid))) {
+        return res.status(403).json({ error: "You can only add members to bands you admin" });
+      }
+    }
+    let user = (await pool.query("SELECT * FROM users WHERE email=$1", [email])).rows[0];
+    const setupToken = crypto.randomBytes(16).toString("hex");
+    if (!user) {
+      user = {
+        id: id(),
+        name,
+        email,
+        password_hash: await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10)
+      };
+      await pool.query(
+        "INSERT INTO users (id, name, email, password_hash, setup_token) VALUES ($1,$2,$3,$4,$5)",
+        [user.id, user.name, user.email, user.password_hash, setupToken]
+      );
+    } else {
+      await pool.query("UPDATE users SET setup_token=$1, name=COALESCE(NULLIF($2,''), name) WHERE id=$3", [setupToken, name, user.id]);
+    }
+    for (const bid of bandIds) {
+      await pool.query(
+        `INSERT INTO memberships (user_id, band_id, role) VALUES ($1,$2,'member')
+         ON CONFLICT (user_id, band_id) DO NOTHING`,
+        [user.id, bid]
+      );
+    }
+    res.json({
+      email,
+      name,
+      link: `/#setup=${setupToken}`,
+      bands: bandIds
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not add member" });
+  }
+});
+
+app.post("/api/setup", async (req, res) => {
+  try {
+    const token = req.body.token;
+    const password = req.body.password || "";
+    if (!token || password.length < 6) return res.status(400).json({ error: "Link and a password of 6+ characters required." });
+    const user = (await pool.query("SELECT * FROM users WHERE setup_token=$1", [token])).rows[0];
+    if (!user) return res.status(400).json({ error: "This setup link is invalid or already used." });
+    const hash = await bcrypt.hash(password, 10);
+    await pool.query("UPDATE users SET password_hash=$1, setup_token=NULL WHERE id=$2", [hash, user.id]);
+    res.json({ token: sign(user), user: { id: user.id, name: user.name, email: user.email } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not finish setup" });
+  }
+});
+
 app.post("/api/invites", auth, async (req, res) => {
   try {
     const email = (req.body.email || "").trim().toLowerCase();
@@ -393,7 +473,8 @@ app.post("/api/invites/accept", async (req, res) => {
 });
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  if (!PUBLIC_DIR) return res.status(500).send("Missing public/index.html — upload the public folder next to server.js.");
+  res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 initDb()
