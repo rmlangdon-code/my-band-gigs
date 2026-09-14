@@ -89,7 +89,7 @@ button { cursor: pointer; }
 }
 .weekdays { margin: 12px 0 6px; color: var(--muted); font-size: 11px; text-transform: uppercase; }
 .day {
-  min-height: 92px; border: 1px solid var(--line); background: #12141a;
+  min-height: 118px; border: 1px solid var(--line); background: #12141a;
   border-radius: 10px; padding: 6px; text-align: left;
 }
 .day.out { opacity: .35; }
@@ -104,7 +104,8 @@ button { cursor: pointer; }
 .avail-mark { font-size: 10px; margin-top: 4px; }
 .avail-mark.AVAILABLE { color: var(--available); }
 .avail-mark.UNAVAILABLE { color: var(--booked); }
-.glance { margin-top: 4px; display: flex; flex-direction: column; gap: 2px; }
+.glance { margin-top: 4px; display: flex; flex-direction: column; gap: 1px; }
+.glance .avail-mark { margin-top: 0; font-size: 9px; line-height: 1.2; }
 
 .event-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .event {
@@ -518,14 +519,11 @@ function renderCalendar() {
     const roster = bandMembers(state.currentBandId);
     let availHtml = "";
     if (isAdmin()) {
-      const outNames = roster
-        .filter(m => getAvail(state.currentBandId, m.user.id, iso) === "UNAVAILABLE")
-        .map(m => firstName(m.user));
-      const inCount = roster.length - outNames.length;
-      availHtml = `<div class="glance">
-        <span class="avail-mark AVAILABLE">${inCount} in</span>
-        ${outNames.length ? `<span class="avail-mark UNAVAILABLE">${outNames.join(", ")} out</span>` : ""}
-      </div>`;
+      availHtml = `<div class="glance">${roster.map(m => {
+        const status = getAvail(state.currentBandId, m.user.id, iso);
+        const word = status === "UNAVAILABLE" ? "out" : "in";
+        return `<span class="avail-mark ${status}">${firstName(m.user)} ${word}</span>`;
+      }).join("")}</div>`;
     } else {
       const avail = getAvail(state.currentBandId, state.currentUserId, iso);
       availHtml = `<div class="avail-mark ${avail}">${avail === "UNAVAILABLE" ? "Out" : "In"}</div>`;
