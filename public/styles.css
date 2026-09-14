@@ -113,7 +113,13 @@ button { cursor: pointer; }
   display: none; align-items: flex-end; justify-content: center; padding: 16px; z-index: 20;
 }
 .modal-back.open { display: flex; }
-.modal {
+#eventModal {
+  display: none;
+  position: fixed; inset: 0; background: rgba(0,0,0,.55);
+  align-items: flex-end; justify-content: center; padding: 16px; z-index: 40;
+}
+#eventModal.open { display: flex; }
+.modal, .modal-card {
   width: min(560px, 100%); background: var(--bg-elev); border: 1px solid var(--line);
   border-radius: 18px; padding: 16px; box-shadow: var(--shadow); max-height: 90vh; overflow: auto;
 }

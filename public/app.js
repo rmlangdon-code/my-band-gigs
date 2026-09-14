@@ -199,25 +199,33 @@ function renderAll() {
 }
 
 function openEventModal(dateISO, eventId, asCopy) {
-  editingEventId = asCopy ? null : (eventId || null);
-  duplicating = !!asCopy;
-  const ev = state.events.find(e => e.id === eventId);
-  $("modalTitle").textContent = asCopy ? "Duplicate event — change what you need, then Save" : (ev ? "Edit event" : "Add gig or rehearsal");
-  $("evBand").innerHTML = myBandIds().map(id => {
-    const b = state.bands.find(x => x.id === id);
-    return `<option value="${b.id}">${b.name}</option>`;
-  }).join("");
-  $("evBand").value = ev?.bandId || (isMergedView() ? myBandIds()[0] : state.currentBandId);
-  $("evTitle").value = ev?.title || "";
-  $("evType").value = ev?.type || "gig";
-  $("evDate").value = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
-  $("evStart").value = ev ? formatTime24to12(ev.start) : "7:00 PM";
-  $("evEnd").value = ev ? formatTime24to12(ev.end) : "10:00 PM";
-  $("evVenue").value = ev?.venue || "";
-  $("evNotes").value = ev?.notes || "";
-  const iso = ev?.date || dateISO;
-  $("evAvail").value = getAvail($("evBand").value, state.currentUserId, iso);
-  $("eventModal").classList.add("open");
+  try {
+    const ids = myBandIds();
+    if (!ids.length) { toast("Add or join a band first."); return; }
+    editingEventId = asCopy ? null : (eventId || null);
+    duplicating = !!asCopy;
+    const ev = state.events.find(e => e.id === eventId);
+    $("modalTitle").textContent = asCopy ? "Duplicate event — change what you need, then Save" : (ev ? "Edit event" : "Add gig or rehearsal");
+    $("evBand").innerHTML = ids.map(id => {
+      const b = state.bands.find(x => x.id === id);
+      if (!b) return "";
+      return `<option value="${b.id}">${b.name}</option>`;
+    }).join("");
+    $("evBand").value = ev?.bandId || (isMergedView() ? ids[0] : state.currentBandId) || ids[0];
+    $("evTitle").value = ev?.title || "";
+    $("evType").value = ev?.type || "gig";
+    $("evDate").value = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
+    $("evStart").value = ev ? formatTime24to12(ev.start) : "7:00 PM";
+    $("evEnd").value = ev ? formatTime24to12(ev.end) : "10:00 PM";
+    $("evVenue").value = ev?.venue || "";
+    $("evNotes").value = ev?.notes || "";
+    const iso = ev?.date || dateISO;
+    $("evAvail").value = getAvail($("evBand").value, state.currentUserId, iso);
+    $("eventModal").classList.add("open");
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Could not open event form");
+  }
 }
 
 async function saveEvent() {
@@ -274,6 +282,9 @@ $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 1
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
+$("eventModal").addEventListener("click", (e) => {
+  if (e.target.id === "eventModal") $("eventModal").classList.remove("open");
+});
 $("saveEvent").onclick = saveEvent;
 $("addBandBtn").onclick = async () => {
   const name = prompt("Band name?");
