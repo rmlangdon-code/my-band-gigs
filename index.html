@@ -78,7 +78,7 @@ button { cursor: pointer; }
 
 .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 10px 0; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-.dot.gig { background: var(--gig); }
+.dot.gig { background: #ffffff; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
 .dot.reh { background: var(--rehearsal); }
 .dot.booked { background: var(--booked); }
 
@@ -99,8 +99,8 @@ button { cursor: pointer; }
   display: block; font-size: 10px; border-radius: 6px; padding: 2px 4px; margin-top: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.chip.gig { background: rgba(61,214,140,.15); color: var(--gig); }
-.chip.rehearsal { background: rgba(91,140,255,.15); color: var(--rehearsal); }
+.chip.gig { background: rgba(255,255,255,.08); color: #ffffff; }
+.chip.rehearsal { background: rgba(91,140,255,.16); color: #8eb4ff; }
 .avail-mark { font-size: 10px; margin-top: 4px; }
 .avail-mark.AVAILABLE { color: var(--available); }
 .avail-mark.UNAVAILABLE { color: var(--booked); }
@@ -111,7 +111,8 @@ button { cursor: pointer; }
 .event {
   border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--bg-elev-2);
 }
-.event h3 { margin: 0 0 4px; font-size: 15px; }
+.event h3 { margin: 0 0 4px; font-size: 15px; color: #fff; }
+.event h3.rehearsal { color: #8eb4ff; }
 .meta { color: var(--muted); font-size: 12px; }
 
 .modal-back {
@@ -541,11 +542,12 @@ function renderUpcoming() {
   const upcoming = eventsForBand(state.currentBandId).filter(e => e.date >= today).slice(0, 8);
   $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
     <div class="event">
-      <h3>${e.title}</h3>
+      <h3 class="${e.type}">${e.title}</h3>
       <div class="meta">${bandShort(e.bandId)} · ${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
       <div class="meta">${e.venue || "Venue TBD"}</div>
       <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn" data-edit="${e.id}">Edit</button>
+        <button class="btn" data-dup="${e.id}">Duplicate</button>
         <button class="btn btn-danger" data-del="${e.id}">Delete</button>
       </div>
     </div>
@@ -605,6 +607,14 @@ function openEventModal(dateISO, eventId) {
 function closeModal() {
   $("eventModal").classList.remove("open");
   editingEventId = null;
+}
+
+function duplicateEvent(id) {
+  const ev = state.events.find(e => e.id === id);
+  if (!ev) return;
+  openEventModal(ev.date, ev.id);
+  editingEventId = null;
+  $("modalTitle").textContent = "Duplicate event — change what you need, then Save";
 }
 
 function saveEvent() {
@@ -711,6 +721,7 @@ function bind() {
   });
   $("upcoming").addEventListener("click", (e) => {
     if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
+    if (e.target.dataset.dup) duplicateEvent(e.target.dataset.dup);
     if (e.target.dataset.del) deleteEvent(e.target.dataset.del);
   });
   $("saveEvent").onclick = saveEvent;
