@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Band Gigs</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="authScreen" class="auth">
+    <div class="card auth-card">
+      <div class="brand" style="margin-bottom:14px">
+        <div class="logo">MBG</div>
+        <div>
+          <h1>My Band Gigs</h1>
+          <small>Gigs, rehearsals, who’s available</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Name (signup only)</label>
+        <input id="loginName" placeholder="Roger" />
+      </div>
+      <div class="form-row">
+        <label>Email</label>
+        <input id="loginEmail" type="email" placeholder="you@email.com" />
+      </div>
+      <div class="form-row">
+        <label>Password</label>
+        <input id="loginPass" type="password" placeholder="6+ characters" />
+      </div>
+      <p class="hint" id="authHint">First account becomes admin of THoRR and Retro Revolution. After that, join with an invite link.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="loginBtn">Sign in</button>
+        <button class="btn" id="signupBtn">Create account</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="appScreen" class="app" style="display:none">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">MBG</div>
+        <div>
+          <h1>My Band Gigs</h1>
+          <small id="bandName"></small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="pill" id="who"></span>
+        <button class="btn btn-ghost" id="logoutBtn">Log out</button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside>
+        <div class="card">
+          <div class="section-label">Your bands</div>
+          <div id="bands"></div>
+          <button class="btn" id="addBandBtn" style="width:100%;margin-top:8px">+ Add band</button>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="section-label">Members</div>
+          <div id="members"></div>
+          <div class="form-row" style="margin-top:10px">
+            <label>Invite by email</label>
+            <input id="inviteEmail" placeholder="member@email.com" />
+          </div>
+          <button class="btn" id="inviteBtn">Create invite link</button>
+          <div class="hint" id="inviteOut" style="margin-top:8px"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="section-label">Alerts</div>
+          <div id="activity" class="meta"></div>
+        </div>
+      </aside>
+      <main>
+        <div class="card">
+          <div class="cal-head">
+            <button class="btn" id="prevMonth">‹</button>
+            <h2 id="monthLabel"></h2>
+            <button class="btn" id="nextMonth">›</button>
+          </div>
+          <div class="legend">
+            <span><i class="dot gig"></i>Gig</span>
+            <span><i class="dot reh"></i>Rehearsal</span>
+            <span><i class="dot booked"></i>Unavailable</span>
+            <button class="btn btn-primary" id="addEventBtn">Add event</button>
+          </div>
+          <div class="weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div id="days" class="days"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="section-label">Upcoming</div>
+          <div id="upcoming" class="event-list"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="eventModal" class="modal">
+    <div class="card modal-card">
+      <h2 id="modalTitle">Add gig or rehearsal</h2>
+      <div class="form-row"><label>Band</label><select id="evBand"></select></div>
+      <div class="form-row"><label>Title</label><input id="evTitle" /></div>
+      <div class="form-row"><label>Type</label>
+        <select id="evType"><option value="gig">Gig</option><option value="rehearsal">Rehearsal</option></select>
+      </div>
+      <div class="form-row"><label>Date</label><input id="evDate" type="date" /></div>
+      <div class="form-row"><label>Start (12-hour)</label><input id="evStart" placeholder="7:00 PM" /></div>
+      <div class="form-row"><label>End</label><input id="evEnd" placeholder="10:00 PM" /></div>
+      <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
+      <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
+      <div class="form-row"><label>My status this date</label>
+        <select id="evAvail">
+          <option value="AVAILABLE">AVAILABLE</option>
+          <option value="UNAVAILABLE">UNAVAILABLE</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn" id="cancelEvent">Cancel</button>
+        <button class="btn btn-primary" id="saveEvent">Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast-wrap" id="toasts"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
