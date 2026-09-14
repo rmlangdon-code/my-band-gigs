@@ -339,16 +339,16 @@ app.post("/api/availability", auth, async (req, res) => {
   try {
     const { bandId, date, status } = req.body;
     if (!(await memberOf(req.user.id, bandId))) return res.status(403).json({ error: "Not in that band" });
-    if (status === "AVAILABLE") {
+    if (!status || status === "BLANK") {
       await pool.query(
         "DELETE FROM availability WHERE band_id=$1 AND user_id=$2 AND date=$3",
         [bandId, req.user.id, date]
       );
     } else {
       await pool.query(
-        `INSERT INTO availability (band_id, user_id, date, status) VALUES ($1,$2,$3,'UNAVAILABLE')
-         ON CONFLICT (band_id, user_id, date) DO UPDATE SET status='UNAVAILABLE'`,
-        [bandId, req.user.id, date]
+        `INSERT INTO availability (band_id, user_id, date, status) VALUES ($1,$2,$3,$4)
+         ON CONFLICT (band_id, user_id, date) DO UPDATE SET status=$4`,
+        [bandId, req.user.id, date, status === "AVAILABLE" ? "AVAILABLE" : "UNAVAILABLE"]
       );
     }
     res.json({ ok: true });

@@ -119,6 +119,7 @@
       <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
       <div class="form-row"><label>My status this date</label>
         <select id="evAvail">
+          <option value="">Blank</option>
           <option value="AVAILABLE">AVAILABLE</option>
           <option value="UNAVAILABLE">UNAVAILABLE</option>
         </select>
@@ -127,6 +128,18 @@
         <button class="btn" id="cancelEvent">Cancel</button>
         <button class="btn btn-primary" id="saveEvent">Save</button>
       </div>
+    </div>
+  </div>
+  <div id="availModal" class="overlay">
+    <div class="card modal-card">
+      <h2>My status</h2>
+      <p class="hint" id="availDateLabel"></p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+        <button class="btn" data-set-avail="">Leave blank</button>
+        <button class="btn btn-primary" data-set-avail="AVAILABLE">Available</button>
+        <button class="btn btn-danger" data-set-avail="UNAVAILABLE">Unavailable</button>
+      </div>
+      <button class="btn" id="cancelAvail">Cancel</button>
     </div>
   </div>
   <div class="toast-wrap" id="toasts"></div>

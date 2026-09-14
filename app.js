@@ -5,6 +5,7 @@ let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 let editingEventId = null;
 let duplicating = false;
+let availDate = null;
 
 async function api(path, opts = {}) {
   const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
@@ -55,11 +56,12 @@ function eventsForBand(bandId) {
 }
 function getAvail(bandId, userId, iso) {
   if (bandId === "all") {
-    const marks = myBandIds().map(id => state.availability[`${id}:${userId}:${iso}`]);
+    const marks = myBandIds().map(id => state.availability[`${id}:${userId}:${iso}`]).filter(Boolean);
     if (marks.includes("UNAVAILABLE")) return "UNAVAILABLE";
-    return "AVAILABLE";
+    if (marks.includes("AVAILABLE")) return "AVAILABLE";
+    return "";
   }
-  return state.availability[`${bandId}:${userId}:${iso}`] || "AVAILABLE";
+  return state.availability[`${bandId}:${userId}:${iso}`] || "";
 }
 function toISODate(y, m, d) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -88,8 +90,13 @@ function parse12to24(s) {
   return `${String(h).padStart(2, "0")}:${mi}`;
 }
 
+function normDate(d) {
+  if (!d) return "";
+  return String(d).slice(0, 10);
+}
 async function loadState() {
   const data = await api("/api/state");
+  if (data.events) data.events = data.events.map(e => ({ ...e, date: normDate(e.date) }));
   state = { ...state, ...data, currentBandId: state.currentBandId || "all" };
   if (state.currentBandId !== "all" && !state.bands.some(b => b.id === state.currentBandId)) state.currentBandId = "all";
   renderAll();
@@ -128,21 +135,25 @@ function renderCalendar() {
   const todayISO = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   $("days").innerHTML = cells.map(({ date, out }) => {
     const iso = toISODate(date.getFullYear(), date.getMonth(), date.getDate());
-    const dayEvents = events.filter(e => e.date === iso);
+    const dayEvents = events.filter(e => normDate(e.date) === iso);
     const roster = bandMembers(state.currentBandId);
     let availHtml = "";
     if (isAdmin()) {
-      availHtml = `<div class="glance">${roster.map(mem => {
+      const marked = roster.map(mem => {
         const status = getAvail(state.currentBandId, mem.user.id, iso);
+        if (!status) return "";
         return `<span class="avail-mark ${status}">${firstName(mem.user)} ${status === "UNAVAILABLE" ? "out" : "in"}</span>`;
-      }).join("")}</div>`;
+      }).join("");
+      availHtml = marked ? `<div class="glance">${marked}</div>` : "";
     } else {
       const avail = getAvail(state.currentBandId, state.currentUserId, iso);
-      availHtml = `<div class="avail-mark ${avail}">${avail === "UNAVAILABLE" ? "Out" : "In"}</div>`;
+      availHtml = avail
+        ? `<div class="avail-mark ${avail}">${avail === "UNAVAILABLE" ? "Out" : "In"}</div>`
+        : "";
     }
     return `<button class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""}" data-date="${iso}">
       <div class="n">${date.getDate()}</div>
-      ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}">${isMergedView() ? bandShort(e.bandId) + " · " : ""}${e.title}</span>`).join("")}
+      ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${isMergedView() ? bandShort(e.bandId) + " · " : ""}${e.title}</span>`).join("")}
       ${availHtml}
     </button>`;
   }).join("");
@@ -251,11 +262,41 @@ async function saveEvent() {
   } catch (err) { toast(err.message); }
 }
 
+function openAvailModal(iso) {
+  availDate = iso;
+  $("availDateLabel").textContent = formatMDY(iso);
+  $("availModal").classList.add("open");
+}
+async function setMyAvail(iso, status) {
+  try {
+    const ids = isMergedView() ? myBandIds() : [state.currentBandId];
+    for (const bandId of ids.filter(Boolean)) {
+      await api("/api/availability", { method: "POST", body: { bandId, date: iso, status } });
+    }
+    $("availModal").classList.remove("open");
+    await loadState();
+    toast(status === "UNAVAILABLE" ? "Marked unavailable" : status === "AVAILABLE" ? "Marked available" : "Cleared");
+  } catch (err) { toast(err.message); }
+}
+
 document.addEventListener("click", async (e) => {
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; renderAll(); }
+  const chip = e.target.closest("[data-eid]");
+  if (chip) {
+    e.preventDefault();
+    openEventModal(null, chip.dataset.eid);
+    return;
+  }
+  if (e.target.dataset.setAvail !== undefined) {
+    setMyAvail(availDate, e.target.dataset.setAvail);
+    return;
+  }
   const day = e.target.closest(".day");
-  if (day && day.dataset.date) openEventModal(day.dataset.date);
+  if (day && day.dataset.date && !e.target.closest("#eventModal")) {
+    openAvailModal(day.dataset.date);
+    return;
+  }
   if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
   if (e.target.dataset.dup) openEventModal(null, e.target.dataset.dup, true);
   if (e.target.dataset.del) {
@@ -282,6 +323,10 @@ $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 1
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
+$("cancelAvail").onclick = () => $("availModal").classList.remove("open");
+$("availModal").addEventListener("click", (e) => {
+  if (e.target.id === "availModal") $("availModal").classList.remove("open");
+});
 $("eventModal").addEventListener("click", (e) => {
   if (e.target.id === "eventModal") $("eventModal").classList.remove("open");
 });
