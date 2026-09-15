@@ -43,6 +43,14 @@ function isAdmin() {
 }
 function firstName(user) { return (user?.firstName || user?.name || "?").split(" ")[0]; }
 function bandShort(bandId) { return state.bands.find(b => b.id === bandId)?.short || ""; }
+function eventLabel(e) {
+  const abbr = bandShort(e.bandId);
+  const title = (e.title || "").trim();
+  if (!abbr) return title;
+  const prefix = abbr + " - ";
+  if (title.toLowerCase().startsWith(abbr.toLowerCase() + " -") || title.toLowerCase().startsWith(abbr.toLowerCase() + " –")) return title;
+  return prefix + title;
+}
 function bandMembers(bandId) {
   const ids = bandId === "all" ? myBandIds() : [bandId];
   const seen = new Set();
@@ -108,7 +116,7 @@ function renderBands() {
   const items = [{ id: "all", name: "All bands" }, ...state.bands.map(b => ({ id: b.id, name: b.name }))];
   $("bands").innerHTML = items.map(b =>
     `<button class="band-item ${state.currentBandId === b.id ? "active" : ""}" data-band="${b.id}"><strong>${b.name}</strong></button>`
-  ).join("");
+  ).join("") + (isAdmin() && state.currentBandId !== "all" ? `<button class="btn" id="editAbbrBtn" style="width:100%;margin-top:6px">Set calendar abbreviation</button>` : "");
 }
 function renderCalendar() {
   const y = viewYear, m = viewMonth;
@@ -153,7 +161,7 @@ function renderCalendar() {
       : "";
     return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}">
       <div class="n">${date.getDate()}</div>
-      ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${isMergedView() ? bandShort(e.bandId) + " · " : ""}${e.title}</span>`).join("")}
+      ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${eventLabel(e)}</span>`).join("")}
       ${out ? "" : extra}
     </div>`;
   }).join("");
@@ -164,8 +172,8 @@ function renderUpcoming() {
   const admin = isAdmin();
   $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
     <div class="event">
-      <h3 class="${e.type}">${e.title}</h3>
-      <div class="meta">${bandShort(e.bandId)} · ${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
+      <h3 class="${e.type}">${eventLabel(e)}</h3>
+      <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
       <div class="meta">${e.venue || "Venue TBD"}</div>
       ${admin ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn" data-edit="${e.id}">Edit</button>
@@ -262,6 +270,14 @@ async function setDot(iso, status) {
 }
 
 document.addEventListener("click", async (e) => {
+  if (e.target.id === "editAbbrBtn") {
+    const b = currentBand();
+    const short = prompt("Calendar abbreviation for " + b.name + "?", b.short || bandShort(b.id) || "");
+    if (short === null || !short.trim()) return;
+    try { await api("/api/bands/" + b.id, { method: "PUT", body: { short: short.trim() } }); await loadState(); toast("Abbreviation saved"); }
+    catch (err) { toast(err.message); }
+    return;
+  }
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
@@ -322,7 +338,9 @@ $("eventModal").addEventListener("click", e => { if (e.target.id === "eventModal
 $("addBandBtn").onclick = async () => {
   const name = prompt("Band name?");
   if (!name) return;
-  try { await api("/api/bands", { method: "POST", body: { name } }); await loadState(); }
+  const short = prompt("Abbreviation for the calendar (example: THoRR or Retro)?", name.slice(0, 8));
+  if (short === null) return;
+  try { await api("/api/bands", { method: "POST", body: { name, short } }); await loadState(); }
   catch (err) { toast(err.message); }
 };
 $("inviteBtn").onclick = async () => {

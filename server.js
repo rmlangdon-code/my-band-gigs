@@ -182,11 +182,23 @@ app.post("/api/bands", auth, async (req, res) => {
   try {
     const name = (req.body.name || "").trim();
     if (!name) return res.status(400).json({ error: "Band name required" });
-    const band = { id: id(), name, short: name.slice(0, 12) };
+    const short = (req.body.short || name).trim().slice(0, 16);
+    const band = { id: id(), name, short };
     await pool.query("INSERT INTO bands (id, name, short, created_by) VALUES ($1,$2,$3,$4)", [band.id, band.name, band.short, req.user.id]);
     await pool.query("INSERT INTO memberships (user_id, band_id, role) VALUES ($1,$2,'admin')", [req.user.id, band.id]);
     res.json(band);
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not add band" }); }
+});
+
+app.put("/api/bands/:id", auth, async (req, res) => {
+  try {
+    if (!(await isAdminOf(req.user.id, req.params.id))) return res.status(403).json({ error: "Admin only" });
+    const name = (req.body.name || "").trim();
+    const short = (req.body.short || "").trim().slice(0, 16);
+    if (name) await pool.query("UPDATE bands SET name=$1 WHERE id=$2", [name, req.params.id]);
+    if (short) await pool.query("UPDATE bands SET short=$1 WHERE id=$2", [short, req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not update band" }); }
 });
 
 app.post("/api/events", auth, async (req, res) => {
