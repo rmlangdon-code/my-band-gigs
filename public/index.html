@@ -11,24 +11,12 @@
     <div class="card auth-card">
       <div class="brand" style="margin-bottom:14px">
         <div class="logo">MBG</div>
-        <div>
-          <h1>My Band Gigs</h1>
-          <small>Gigs, rehearsals, who’s available</small>
-        </div>
+        <div><h1>My Band Gigs</h1><small>Gigs, rehearsals, who’s available</small></div>
       </div>
-      <div class="form-row">
-        <label>Name (signup only)</label>
-        <input id="loginName" placeholder="Roger" />
-      </div>
-      <div class="form-row">
-        <label>Email</label>
-        <input id="loginEmail" type="email" placeholder="you@email.com" />
-      </div>
-      <div class="form-row">
-        <label>Password</label>
-        <input id="loginPass" type="password" placeholder="6+ characters" />
-      </div>
-      <p class="hint" id="authHint">First account becomes admin of THoRR and Retro Revolution. After that, join with an invite link.</p>
+      <div class="form-row"><label>Name (signup only)</label><input id="loginName" /></div>
+      <div class="form-row"><label>Email</label><input id="loginEmail" type="email" /></div>
+      <div class="form-row"><label>Password</label><input id="loginPass" type="password" /></div>
+      <p class="hint" id="authHint">Members use the setup link from your admin. First account is the admin.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" id="loginBtn">Sign in</button>
         <button class="btn" id="signupBtn">Create account</button>
@@ -40,10 +28,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="logo">MBG</div>
-        <div>
-          <h1>My Band Gigs</h1>
-          <small id="bandName"></small>
-        </div>
+        <div><h1>My Band Gigs</h1><small id="bandName"></small></div>
       </div>
       <div class="top-actions">
         <span class="pill" id="who"></span>
@@ -55,53 +40,19 @@
         <div class="card">
           <div class="section-label">Your bands</div>
           <div id="bands"></div>
-          <button class="btn" id="addBandBtn" style="width:100%;margin-top:8px">+ Add band</button>
+          <button class="btn admin-only" id="addBandBtn" style="width:100%;margin-top:8px">+ Add band</button>
         </div>
-        <div class="card" style="margin-top:12px">
+        <div class="card admin-only" id="membersCard" style="margin-top:12px">
           <div class="section-label">Members</div>
           <div id="members"></div>
-          <div class="form-row" style="margin-top:10px">
-            <label>First name</label>
-            <input id="inviteFirst" placeholder="Andrea" />
-          </div>
-          <div class="form-row">
-            <label>Last name</label>
-            <input id="inviteLast" placeholder="Martinez" />
-          </div>
-          <div class="form-row">
-            <label>Birthday</label>
-            <input id="inviteBday" type="date" />
-          </div>
-          <div class="form-row">
-            <label>Their email</label>
-            <input id="inviteEmail" placeholder="member@email.com" />
-          </div>
-          <div class="hint">They’ll be added to the bands checked below, then you send them the link to set a password.</div>
+          <div class="form-row" style="margin-top:10px"><label>First name</label><input id="inviteFirst" /></div>
+          <div class="form-row"><label>Last name</label><input id="inviteLast" /></div>
+          <div class="form-row"><label>Birthday</label><input id="inviteBday" type="date" /></div>
+          <div class="form-row"><label>Email</label><input id="inviteEmail" /></div>
+          <div class="hint">Check bands, then add. Link is copied — paste it to them.</div>
           <div id="inviteBands" class="hint" style="margin:8px 0"></div>
           <button class="btn" id="inviteBtn">Add member & copy link</button>
           <div id="inviteOut" class="invite-box" style="margin-top:8px;display:none"></div>
-        </div>
-        <div id="memberModal" class="overlay">
-          <div class="card modal-card">
-            <h2>Edit member</h2>
-            <input type="hidden" id="editMemberId" />
-            <div class="form-row"><label>First name</label><input id="editMemberFirst" /></div>
-            <div class="form-row"><label>Last name</label><input id="editMemberLast" /></div>
-            <div class="form-row"><label>Birthday</label><input id="editMemberBday" type="date" /></div>
-            <div class="form-row"><label>Email</label><input id="editMemberEmail" /></div>
-            <div class="form-row"><label>Role</label>
-              <select id="editMemberRole">
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div id="editMemberBands" class="hint"></div>
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-              <button class="btn btn-primary" id="saveMemberBtn">Save</button>
-              <button class="btn" id="resendLinkBtn">New setup link</button>
-              <button class="btn" id="cancelMemberBtn">Cancel</button>
-            </div>
-          </div>
         </div>
         <div class="card" style="margin-top:12px">
           <div class="section-label">Alerts</div>
@@ -118,12 +69,12 @@
           <div class="legend">
             <span><i class="dot gig"></i>Gig</span>
             <span><i class="dot reh"></i>Rehearsal</span>
-            <span><i class="dot booked"></i>Unavailable</span>
-            <button class="btn btn-primary" id="addEventBtn">Add event</button>
+            <span><i class="dot in"></i>Available</span>
+            <span><i class="dot out"></i>Unavailable</span>
+            <button class="btn btn-primary admin-only" id="addEventBtn">Add event</button>
           </div>
-          <div class="weekdays">
-            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-          </div>
+          <p class="hint" id="memberHint" style="display:none">Tap the green or red dot on a date. Green = available, red = unavailable. Tap again to clear.</p>
+          <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
           <div id="days" class="days"></div>
         </div>
         <div class="card" style="margin-top:12px">
@@ -134,8 +85,8 @@
     </div>
   </div>
 
-  <div id="eventModal" class="modal">
-    <div class="card modal-card">
+  <div id="eventModal">
+    <div class="modal-card">
       <h2 id="modalTitle">Add gig or rehearsal</h2>
       <div class="form-row"><label>Band</label><select id="evBand"></select></div>
       <div class="form-row"><label>Title</label><input id="evTitle" /></div>
@@ -143,33 +94,34 @@
         <select id="evType"><option value="gig">Gig</option><option value="rehearsal">Rehearsal</option></select>
       </div>
       <div class="form-row"><label>Date</label><input id="evDate" type="date" /></div>
-      <div class="form-row"><label>Start (12-hour)</label><input id="evStart" placeholder="7:00 PM" /></div>
+      <div class="form-row"><label>Start</label><input id="evStart" placeholder="7:00 PM" /></div>
       <div class="form-row"><label>End</label><input id="evEnd" placeholder="10:00 PM" /></div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
       <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
-      <div class="form-row"><label>My status this date</label>
-        <select id="evAvail">
-          <option value="">Blank</option>
-          <option value="AVAILABLE">AVAILABLE</option>
-          <option value="UNAVAILABLE">UNAVAILABLE</option>
-        </select>
-      </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn" id="cancelEvent">Cancel</button>
         <button class="btn btn-primary" id="saveEvent">Save</button>
       </div>
     </div>
   </div>
-  <div id="availModal" class="overlay">
-    <div class="card modal-card">
-      <h2>My status</h2>
-      <p class="hint" id="availDateLabel"></p>
-      <div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
-        <button class="btn" data-set-avail="">Leave blank</button>
-        <button class="btn btn-primary" data-set-avail="AVAILABLE">Available</button>
-        <button class="btn btn-danger" data-set-avail="UNAVAILABLE">Unavailable</button>
+
+  <div id="memberModal" class="overlay">
+    <div class="modal-card">
+      <h2>Edit member</h2>
+      <input type="hidden" id="editMemberId" />
+      <div class="form-row"><label>First name</label><input id="editMemberFirst" /></div>
+      <div class="form-row"><label>Last name</label><input id="editMemberLast" /></div>
+      <div class="form-row"><label>Birthday</label><input id="editMemberBday" type="date" /></div>
+      <div class="form-row"><label>Email</label><input id="editMemberEmail" /></div>
+      <div class="form-row"><label>Role</label>
+        <select id="editMemberRole"><option value="member">Member</option><option value="admin">Admin</option></select>
       </div>
-      <button class="btn" id="cancelAvail">Cancel</button>
+      <div id="editMemberBands" class="hint"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="saveMemberBtn">Save</button>
+        <button class="btn" id="resendLinkBtn">New setup link</button>
+        <button class="btn" id="cancelMemberBtn">Cancel</button>
+      </div>
     </div>
   </div>
   <div class="toast-wrap" id="toasts"></div>
