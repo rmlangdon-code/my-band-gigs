@@ -16,6 +16,19 @@ async function api(path, opts = {}) {
   return data;
 }
 
+function showInviteLink(url) {
+  const box = $("inviteOut");
+  if (!box) return;
+  box.style.display = "block";
+  box.innerHTML = `<div>Link copied. Paste it in a text to them.</div>
+    <button class="btn" type="button" id="copyInviteBtn" style="margin-top:8px">Copy link again</button>`;
+  navigator.clipboard?.writeText(url);
+  box.dataset.url = url;
+  $("copyInviteBtn").onclick = () => {
+    navigator.clipboard?.writeText(box.dataset.url || url);
+    toast("Link copied");
+  };
+}
 function toast(msg) {
   const wrap = $("toasts");
   if (!wrap) return alert(msg);
@@ -401,10 +414,8 @@ $("resendLinkBtn").onclick = async () => {
         bandIds
       }
     });
-    const url = location.origin + data.link;
-    navigator.clipboard?.writeText(url);
+    showInviteLink(location.origin + data.link);
     toast("New setup link copied");
-    $("inviteOut").textContent = "Send this link: " + url;
   } catch (err) { toast(err.message); }
 };
 $("availModal").addEventListener("click", (e) => {
@@ -433,9 +444,7 @@ $("inviteBtn").onclick = async () => {
         bandIds
       }
     });
-    const url = location.origin + data.link;
-    $("inviteOut").textContent = "Send this link: " + url;
-    navigator.clipboard?.writeText(url);
+    showInviteLink(location.origin + data.link);
     toast("Member added. Link copied.");
     await loadState();
   } catch (err) { toast(err.message); }

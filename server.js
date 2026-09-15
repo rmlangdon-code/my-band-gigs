@@ -378,7 +378,7 @@ app.post("/api/members", auth, async (req, res) => {
       }
     }
     let user = (await pool.query("SELECT * FROM users WHERE email=$1", [email])).rows[0];
-    const setupToken = crypto.randomBytes(16).toString("hex");
+    const setupToken = crypto.randomBytes(4).toString("hex");
     if (!user) {
       user = {
         id: id(),
@@ -514,7 +514,7 @@ app.post("/api/invites", auth, async (req, res) => {
     const role = req.body.role === "admin" ? "admin" : "member";
     if (!email || !bandId) return res.status(400).json({ error: "Email and band required" });
     if (!(await isAdminOf(req.user.id, bandId))) return res.status(403).json({ error: "Only admins can invite" });
-    const token = crypto.randomBytes(16).toString("hex");
+    const token = crypto.randomBytes(4).toString("hex");
     await pool.query(
       "INSERT INTO invites (id, email, band_id, role, token, invited_by) VALUES ($1,$2,$3,$4,$5,$6)",
       [id(), email, bandId, role, token, req.user.id]
