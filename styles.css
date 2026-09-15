@@ -48,9 +48,10 @@ button{cursor:pointer}
 .avail-mark.UNAVAILABLE{color:var(--booked)}
 .glance{margin-top:4px;display:flex;flex-direction:column;gap:1px}
 .dots{display:flex;gap:8px;margin-top:8px;align-items:center}
-.pick{width:16px;height:16px;border-radius:50%;border:2px solid #000;padding:0;background:transparent}
-.pick.in.on{background:var(--available)}
-.pick.out.on{background:var(--booked)}
+.pick{width:16px;height:16px;border-radius:50%;border:2px solid #000;padding:0}
+.pick.in{background:var(--available)}
+.pick.out{background:var(--booked)}
+.pick.on{outline:2px solid #000;outline-offset:1px}
 .day.filled-in{background:rgba(61,214,140,.28)}
 .day.filled-out{background:rgba(255,107,107,.28)}
 .event-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}

@@ -221,13 +221,16 @@ function renderAll() {
 }
 
 function openEventModal(dateISO, eventId, asCopy) {
-  if (!isAdmin()) return;
+  const admin = isAdmin();
+  if (!admin && !eventId) return;
   const ids = myBandIds();
   if (!ids.length) { toast("Add a band first."); return; }
   editingEventId = asCopy ? null : (eventId || null);
   duplicating = !!asCopy;
   const ev = state.events.find(e => e.id === eventId);
-  $("modalTitle").textContent = asCopy ? "Duplicate event" : (ev ? "Edit event" : "Add gig or rehearsal");
+  $("modalTitle").textContent = !admin ? "Event details" : (asCopy ? "Duplicate event" : (ev ? "Edit event" : "Add gig or rehearsal"));
+  ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue","evNotes"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
+  $("saveEvent").style.display = admin ? "" : "none";
   $("evBand").innerHTML = ids.map(id => {
     const b = state.bands.find(x => x.id === id);
     return b ? `<option value="${b.id}">${b.name}</option>` : "";
@@ -283,7 +286,7 @@ document.addEventListener("click", async (e) => {
   const dot = e.target.closest("[data-dot]");
   if (dot) { setDot(dot.dataset.date, dot.dataset.dot); return; }
   const chip = e.target.closest("[data-eid]");
-  if (chip) { if (isAdmin()) openEventModal(null, chip.dataset.eid); return; }
+  if (chip) { openEventModal(null, chip.dataset.eid); return; }
   if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
   if (e.target.dataset.dup) openEventModal(null, e.target.dataset.dup, true);
   if (e.target.dataset.del) {
