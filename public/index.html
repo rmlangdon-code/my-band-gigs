@@ -94,6 +94,13 @@
       <div class="form-row"><label>End</label><input id="evEnd" placeholder="10:00 PM" /></div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
       <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
+      <div class="form-row" id="evAvailRow">
+        <label>My status</label>
+        <div class="dots" style="margin-top:4px">
+          <button type="button" class="pick in" id="evAvailIn" title="Available"></button>
+          <button type="button" class="pick out" id="evAvailOut" title="Unavailable"></button>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn" id="cancelEvent">Close</button>
         <button class="btn btn-primary" id="saveEvent">Save</button>

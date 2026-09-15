@@ -148,14 +148,14 @@ function renderCalendar() {
         return `<span class="avail-mark ${status}">${firstName(mem.user)} ${status === "UNAVAILABLE" ? "out" : "in"}</span>`;
       }).join("");
       extra = marked ? `<div class="glance">${marked}</div>` : "";
-    } else if (!dayEvents.length) {
+    } else {
       const mine = getAvail(state.currentBandId, state.currentUserId, iso);
       extra = `<div class="dots">
         <button class="pick in ${mine === "AVAILABLE" ? "on" : ""}" data-dot="AVAILABLE" data-date="${iso}" title="Available"></button>
         <button class="pick out ${mine === "UNAVAILABLE" ? "on" : ""}" data-dot="UNAVAILABLE" data-date="${iso}" title="Unavailable"></button>
       </div>`;
     }
-    const fill = (!admin && !out && !dayEvents.length)
+    const fill = (!admin && !out)
       ? (getAvail(state.currentBandId, state.currentUserId, iso) === "AVAILABLE" ? "filled-in"
         : getAvail(state.currentBandId, state.currentUserId, iso) === "UNAVAILABLE" ? "filled-out" : "")
       : "";
@@ -171,7 +171,7 @@ function renderUpcoming() {
   const upcoming = eventsForBand(state.currentBandId).filter(e => e.date >= today).slice(0, 8);
   const admin = isAdmin();
   $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
-    <div class="event">
+    <div class="event" data-eid="${e.id}">
       <h3 class="${e.type}">${eventLabel(e)}</h3>
       <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
       <div class="meta">${e.venue || "Venue TBD"}</div>
@@ -243,6 +243,12 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evEnd").value = ev ? formatTime24to12(ev.end) : "10:00 PM";
   $("evVenue").value = ev?.venue || "";
   $("evNotes").value = ev?.notes || "";
+  const availDate = ev?.date || dateISO || $("evDate").value;
+  const mine = getAvail(ev?.bandId || $("evBand").value || state.currentBandId, state.currentUserId, availDate);
+  $("evAvailIn").classList.toggle("on", mine === "AVAILABLE");
+  $("evAvailOut").classList.toggle("on", mine === "UNAVAILABLE");
+  $("evAvailIn").onclick = () => setDot(availDate, "AVAILABLE");
+  $("evAvailOut").onclick = () => setDot(availDate, "UNAVAILABLE");
   $("eventModal").classList.add("open");
 }
 async function saveEvent() {
@@ -269,6 +275,10 @@ async function setDot(iso, status) {
       await api("/api/availability", { method: "POST", body: { bandId, date: iso, status: next } });
     }
     await loadState();
+    if ($("eventModal")?.classList.contains("open")) {
+      $("evAvailIn")?.classList.toggle("on", next === "AVAILABLE");
+      $("evAvailOut")?.classList.toggle("on", next === "UNAVAILABLE");
+    }
   } catch (err) { toast(err.message); }
 }
 
