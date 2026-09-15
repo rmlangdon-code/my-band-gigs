@@ -61,8 +61,16 @@
           <div class="section-label">Members</div>
           <div id="members"></div>
           <div class="form-row" style="margin-top:10px">
-            <label>Add member name</label>
-            <input id="inviteName" placeholder="Andrea" />
+            <label>First name</label>
+            <input id="inviteFirst" placeholder="Andrea" />
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input id="inviteLast" placeholder="Martinez" />
+          </div>
+          <div class="form-row">
+            <label>Birthday</label>
+            <input id="inviteBday" type="date" />
           </div>
           <div class="form-row">
             <label>Their email</label>
@@ -72,6 +80,28 @@
           <div id="inviteBands" class="hint" style="margin:8px 0"></div>
           <button class="btn" id="inviteBtn">Add member & copy link</button>
           <div class="hint" id="inviteOut" style="margin-top:8px"></div>
+        </div>
+        <div id="memberModal" class="overlay">
+          <div class="card modal-card">
+            <h2>Edit member</h2>
+            <input type="hidden" id="editMemberId" />
+            <div class="form-row"><label>First name</label><input id="editMemberFirst" /></div>
+            <div class="form-row"><label>Last name</label><input id="editMemberLast" /></div>
+            <div class="form-row"><label>Birthday</label><input id="editMemberBday" type="date" /></div>
+            <div class="form-row"><label>Email</label><input id="editMemberEmail" /></div>
+            <div class="form-row"><label>Role</label>
+              <select id="editMemberRole">
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div id="editMemberBands" class="hint"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn btn-primary" id="saveMemberBtn">Save</button>
+              <button class="btn" id="resendLinkBtn">New setup link</button>
+              <button class="btn" id="cancelMemberBtn">Cancel</button>
+            </div>
+          </div>
         </div>
         <div class="card" style="margin-top:12px">
           <div class="section-label">Alerts</div>

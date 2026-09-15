@@ -88,6 +88,9 @@ async function initDb() {
       at TIMESTAMPTZ DEFAULT NOW()
     );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS setup_token TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE;
     CREATE TABLE IF NOT EXISTS invites (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL,
@@ -192,7 +195,7 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/state", auth, async (req, res) => {
   try {
     const uid = req.user.id;
-    const users = (await pool.query("SELECT id, name, email FROM users ORDER BY name")).rows;
+    const users = (await pool.query("SELECT id, name, email, first_name AS \"firstName\", last_name AS \"lastName\", birthday::text FROM users ORDER BY name")).rows;
     const memberships = (await pool.query(
       `SELECT m.* FROM memberships m WHERE m.user_id=$1
        OR m.band_id IN (SELECT band_id FROM memberships WHERE user_id=$1)`,
@@ -360,11 +363,14 @@ app.post("/api/availability", auth, async (req, res) => {
 
 app.post("/api/members", auth, async (req, res) => {
   try {
-    const name = (req.body.name || "").trim();
+    const firstName = (req.body.firstName || "").trim();
+    const lastName = (req.body.lastName || "").trim();
+    const name = (req.body.name || `${firstName} ${lastName}`).trim();
     const email = (req.body.email || "").trim().toLowerCase();
+    const birthday = req.body.birthday || null;
     let bandIds = Array.isArray(req.body.bandIds) ? req.body.bandIds.filter(Boolean) : [];
     if (!bandIds.length && req.body.bandId) bandIds = [req.body.bandId];
-    if (!name || !email) return res.status(400).json({ error: "Name and email required" });
+    if (!name || !email) return res.status(400).json({ error: "First name, last name, and email required" });
     if (!bandIds.length) return res.status(400).json({ error: "Pick at least one band" });
     for (const bid of bandIds) {
       if (!(await isAdminOf(req.user.id, bid))) {
@@ -381,11 +387,14 @@ app.post("/api/members", auth, async (req, res) => {
         password_hash: await bcrypt.hash(crypto.randomBytes(24).toString("hex"), 10)
       };
       await pool.query(
-        "INSERT INTO users (id, name, email, password_hash, setup_token) VALUES ($1,$2,$3,$4,$5)",
-        [user.id, user.name, user.email, user.password_hash, setupToken]
+        "INSERT INTO users (id, name, email, password_hash, setup_token, first_name, last_name, birthday) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+        [user.id, user.name, user.email, user.password_hash, setupToken, firstName || name.split(" ")[0], lastName || name.split(" ").slice(1).join(" "), birthday]
       );
     } else {
-      await pool.query("UPDATE users SET setup_token=$1, name=COALESCE(NULLIF($2,''), name) WHERE id=$3", [setupToken, name, user.id]);
+      await pool.query(
+        "UPDATE users SET setup_token=$1, name=COALESCE(NULLIF($2,''), name), first_name=COALESCE(NULLIF($3,''), first_name), last_name=COALESCE(NULLIF($4,''), last_name), birthday=COALESCE($5::date, birthday) WHERE id=$6",
+        [setupToken, name, firstName, lastName, birthday, user.id]
+      );
     }
     for (const bid of bandIds) {
       await pool.query(
@@ -403,6 +412,82 @@ app.post("/api/members", auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not add member" });
+  }
+});
+
+app.put("/api/members/:id", auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const firstName = (req.body.firstName || "").trim();
+    const lastName = (req.body.lastName || "").trim();
+    const name = (req.body.name || `${firstName} ${lastName}`).trim();
+    const email = (req.body.email || "").trim().toLowerCase();
+    const birthday = req.body.birthday || null;
+    const role = req.body.role === "admin" ? "admin" : "member";
+    let bandIds = Array.isArray(req.body.bandIds) ? req.body.bandIds.filter(Boolean) : null;
+    const target = (await pool.query("SELECT * FROM users WHERE id=$1", [userId])).rows[0];
+    if (!target) return res.status(404).json({ error: "Member not found" });
+    const currentBands = (await pool.query("SELECT band_id FROM memberships WHERE user_id=$1", [userId])).rows.map(r => r.band_id);
+    const checkIds = bandIds || currentBands;
+    for (const bid of checkIds) {
+      if (!(await isAdminOf(req.user.id, bid))) return res.status(403).json({ error: "Admin only" });
+    }
+    if (name) await pool.query(
+      "UPDATE users SET name=$1, first_name=$2, last_name=$3, birthday=COALESCE($4::date, birthday) WHERE id=$5",
+      [name, firstName || target.first_name, lastName || target.last_name, birthday, userId]
+    );
+    if (email && email !== target.email) {
+      const taken = await pool.query("SELECT id FROM users WHERE email=$1 AND id<>$2", [email, userId]);
+      if (taken.rowCount) return res.status(400).json({ error: "That email is already in use." });
+      await pool.query("UPDATE users SET email=$1 WHERE id=$2", [email, userId]);
+    }
+    if (bandIds) {
+      for (const bid of currentBands) {
+        if (!bandIds.includes(bid) && (await isAdminOf(req.user.id, bid))) {
+          await pool.query("DELETE FROM memberships WHERE user_id=$1 AND band_id=$2", [userId, bid]);
+        }
+      }
+      for (const bid of bandIds) {
+        if (!(await isAdminOf(req.user.id, bid))) continue;
+        await pool.query(
+          `INSERT INTO memberships (user_id, band_id, role) VALUES ($1,$2,$3)
+           ON CONFLICT (user_id, band_id) DO UPDATE SET role=$3`,
+          [userId, bid, role]
+        );
+      }
+    } else if (req.body.bandId) {
+      if (!(await isAdminOf(req.user.id, req.body.bandId))) return res.status(403).json({ error: "Admin only" });
+      await pool.query("UPDATE memberships SET role=$1 WHERE user_id=$2 AND band_id=$3", [role, userId, req.body.bandId]);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not update member" });
+  }
+});
+
+app.delete("/api/members/:id", auth, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (userId === req.user.id) return res.status(400).json({ error: "You can’t remove yourself." });
+    const bandId = req.query.bandId || req.body?.bandId;
+    if (bandId) {
+      if (!(await isAdminOf(req.user.id, bandId))) return res.status(403).json({ error: "Admin only" });
+      await pool.query("DELETE FROM memberships WHERE user_id=$1 AND band_id=$2", [userId, bandId]);
+      await pool.query("DELETE FROM availability WHERE user_id=$1 AND band_id=$2", [userId, bandId]);
+    } else {
+      const bands = (await pool.query("SELECT band_id FROM memberships WHERE user_id=$1", [userId])).rows;
+      for (const row of bands) {
+        if (await isAdminOf(req.user.id, row.band_id)) {
+          await pool.query("DELETE FROM memberships WHERE user_id=$1 AND band_id=$2", [userId, row.band_id]);
+          await pool.query("DELETE FROM availability WHERE user_id=$1 AND band_id=$2", [userId, row.band_id]);
+        }
+      }
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not remove member" });
   }
 });
 

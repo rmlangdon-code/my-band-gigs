@@ -176,9 +176,23 @@ function renderUpcoming() {
 }
 
 function renderMembers() {
-  $("members").innerHTML = bandMembers(state.currentBandId).map(m =>
-    `<div class="meta">${m.user.name} · ${m.role}${m.user.id === state.currentUserId ? " (you)" : ""}</div>`
-  ).join("") || `<div class="meta">No members yet.</div>`;
+  $("members").innerHTML = bandMembers(state.currentBandId).map(m => {
+    const you = m.user.id === state.currentUserId ? " (you)" : "";
+    const adminBtns = isAdmin() && m.user.id !== state.currentUserId
+      ? `<div style="margin:4px 0 8px;display:flex;gap:6px">
+           <button class="btn" data-edit-member="${m.user.id}">Edit</button>
+           <button class="btn btn-danger" data-del-member="${m.user.id}">Remove</button>
+         </div>`
+      : "";
+    const bday = m.user.birthday ? formatMDY(String(m.user.birthday).slice(0, 10)) : "";
+    const full = [m.user.firstName || m.user.name, m.user.lastName].filter(Boolean).join(" ");
+    return `<div class="meta">${full} · ${m.role}${you}<br>${m.user.email || ""}${bday ? "<br>Birthday " + bday : ""}</div>${adminBtns}`;
+  }).join("") || `<div class="meta">No members yet.</div>`;
+  const addForm = $("inviteBtn");
+  if (addForm) addForm.style.display = isAdmin() ? "" : "none";
+  ["inviteFirst", "inviteLast", "inviteBday", "inviteEmail", "inviteBands", "inviteOut"].forEach(id => {
+    if ($(id) && $(id).parentElement) $(id).parentElement.style.display = isAdmin() ? "" : "none";
+  });
   const adminBands = state.bands.filter(b =>
     state.memberships.some(m => m.userId === state.currentUserId && m.bandId === b.id && m.role === "admin")
   );
@@ -297,6 +311,36 @@ document.addEventListener("click", async (e) => {
     openAvailModal(day.dataset.date);
     return;
   }
+  if (e.target.dataset.editMember) {
+    const u = state.users.find(x => x.id === e.target.dataset.editMember);
+    if (!u) return;
+    $("editMemberId").value = u.id;
+    $("editMemberFirst").value = u.firstName || (u.name || "").split(" ")[0] || "";
+    $("editMemberLast").value = u.lastName || (u.name || "").split(" ").slice(1).join(" ") || "";
+    $("editMemberBday").value = u.birthday ? String(u.birthday).slice(0, 10) : "";
+    $("editMemberEmail").value = u.email || "";
+    const mem = state.memberships.find(m => m.userId === u.id && (isMergedView() || m.bandId === state.currentBandId));
+    $("editMemberRole").value = mem?.role || "member";
+    const adminBands = state.bands.filter(b =>
+      state.memberships.some(m => m.userId === state.currentUserId && m.bandId === b.id && m.role === "admin")
+    );
+    const theirs = new Set(state.memberships.filter(m => m.userId === u.id).map(m => m.bandId));
+    $("editMemberBands").innerHTML = adminBands.map(b =>
+      `<label style="display:block;margin:4px 0"><input type="checkbox" class="edit-band" value="${b.id}" ${theirs.has(b.id) ? "checked" : ""}> ${b.name}</label>`
+    ).join("");
+    $("memberModal").classList.add("open");
+    return;
+  }
+  if (e.target.dataset.delMember) {
+    if (!confirm("Remove this member from the current band(s)?")) return;
+    const bandId = isMergedView() ? "" : state.currentBandId;
+    try {
+      await api("/api/members/" + e.target.dataset.delMember + (bandId ? ("?bandId=" + encodeURIComponent(bandId)) : ""), { method: "DELETE" });
+      await loadState();
+      toast("Member removed");
+    } catch (err) { toast(err.message); }
+    return;
+  }
   if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
   if (e.target.dataset.dup) openEventModal(null, e.target.dataset.dup, true);
   if (e.target.dataset.del) {
@@ -324,6 +368,45 @@ $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("cancelAvail").onclick = () => $("availModal").classList.remove("open");
+$("cancelMemberBtn").onclick = () => $("memberModal").classList.remove("open");
+$("saveMemberBtn").onclick = async () => {
+  try {
+    const bandIds = [...document.querySelectorAll(".edit-band:checked")].map(el => el.value);
+    await api("/api/members/" + $("editMemberId").value, {
+      method: "PUT",
+      body: {
+        firstName: $("editMemberFirst").value,
+        lastName: $("editMemberLast").value,
+        birthday: $("editMemberBday").value,
+        email: $("editMemberEmail").value,
+        role: $("editMemberRole").value,
+        bandIds
+      }
+    });
+    $("memberModal").classList.remove("open");
+    await loadState();
+    toast("Member updated");
+  } catch (err) { toast(err.message); }
+};
+$("resendLinkBtn").onclick = async () => {
+  try {
+    const bandIds = [...document.querySelectorAll(".edit-band:checked")].map(el => el.value);
+    const data = await api("/api/members", {
+      method: "POST",
+      body: {
+        firstName: $("editMemberFirst").value,
+        lastName: $("editMemberLast").value,
+        birthday: $("editMemberBday").value,
+        email: $("editMemberEmail").value,
+        bandIds
+      }
+    });
+    const url = location.origin + data.link;
+    navigator.clipboard?.writeText(url);
+    toast("New setup link copied");
+    $("inviteOut").textContent = "Send this link: " + url;
+  } catch (err) { toast(err.message); }
+};
 $("availModal").addEventListener("click", (e) => {
   if (e.target.id === "availModal") $("availModal").classList.remove("open");
 });
@@ -342,7 +425,13 @@ $("inviteBtn").onclick = async () => {
     const bandIds = [...document.querySelectorAll(".invite-band:checked")].map(el => el.value);
     const data = await api("/api/members", {
       method: "POST",
-      body: { name: $("inviteName").value, email: $("inviteEmail").value, bandIds }
+      body: {
+        firstName: $("inviteFirst").value,
+        lastName: $("inviteLast").value,
+        birthday: $("inviteBday").value,
+        email: $("inviteEmail").value,
+        bandIds
+      }
     });
     const url = location.origin + data.link;
     $("inviteOut").textContent = "Send this link: " + url;
