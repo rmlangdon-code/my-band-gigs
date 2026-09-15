@@ -113,7 +113,7 @@ function renderBands() {
   }))];
   $("bands").innerHTML = items.map(b => `
     <button class="band-item ${state.currentBandId === b.id ? "active" : ""}" data-band="${b.id}">
-      <strong>${b.name}</strong><span>${b.sub}</span>
+      <strong>${b.name}</strong>
     </button>`).join("");
 }
 
@@ -186,7 +186,7 @@ function renderMembers() {
       : "";
     const bday = m.user.birthday ? formatMDY(String(m.user.birthday).slice(0, 10)) : "";
     const full = [m.user.firstName || m.user.name, m.user.lastName].filter(Boolean).join(" ");
-    return `<div class="meta">${full} · ${m.role}${you}<br>${m.user.email || ""}${bday ? "<br>Birthday " + bday : ""}</div>${adminBtns}`;
+    return `<div class="meta">${full} · ${m.role}${you}</div>${adminBtns}`;
   }).join("") || `<div class="meta">No members yet.</div>`;
   const addForm = $("inviteBtn");
   if (addForm) addForm.style.display = isAdmin() ? "" : "none";
