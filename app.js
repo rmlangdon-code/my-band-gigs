@@ -140,14 +140,18 @@ function renderCalendar() {
         return `<span class="avail-mark ${status}">${firstName(mem.user)} ${status === "UNAVAILABLE" ? "out" : "in"}</span>`;
       }).join("");
       extra = marked ? `<div class="glance">${marked}</div>` : "";
-    } else {
+    } else if (!dayEvents.length) {
       const mine = getAvail(state.currentBandId, state.currentUserId, iso);
       extra = `<div class="dots">
         <button class="pick in ${mine === "AVAILABLE" ? "on" : ""}" data-dot="AVAILABLE" data-date="${iso}" title="Available"></button>
         <button class="pick out ${mine === "UNAVAILABLE" ? "on" : ""}" data-dot="UNAVAILABLE" data-date="${iso}" title="Unavailable"></button>
       </div>`;
     }
-    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""}">
+    const fill = (!admin && !out && !dayEvents.length)
+      ? (getAvail(state.currentBandId, state.currentUserId, iso) === "AVAILABLE" ? "filled-in"
+        : getAvail(state.currentBandId, state.currentUserId, iso) === "UNAVAILABLE" ? "filled-out" : "")
+      : "";
+    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}">
       <div class="n">${date.getDate()}</div>
       ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${isMergedView() ? bandShort(e.bandId) + " · " : ""}${e.title}</span>`).join("")}
       ${out ? "" : extra}
@@ -206,7 +210,6 @@ function renderAll() {
   renderCalendar();
   renderUpcoming();
   renderMembers();
-  renderActivity();
 }
 
 function openEventModal(dateISO, eventId, asCopy) {

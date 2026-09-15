@@ -42,6 +42,10 @@
           <div id="bands"></div>
           <button class="btn admin-only" id="addBandBtn" style="width:100%;margin-top:8px">+ Add band</button>
         </div>
+        <div class="card" style="margin-top:12px">
+          <div class="section-label">Upcoming</div>
+          <div id="upcoming" class="event-list"></div>
+        </div>
         <div class="card admin-only" id="membersCard" style="margin-top:12px">
           <div class="section-label">Members</div>
           <div id="members"></div>
@@ -53,10 +57,6 @@
           <div id="inviteBands" class="hint" style="margin:8px 0"></div>
           <button class="btn" id="inviteBtn">Add member & copy link</button>
           <div id="inviteOut" class="invite-box" style="margin-top:8px;display:none"></div>
-        </div>
-        <div class="card" style="margin-top:12px">
-          <div class="section-label">Alerts</div>
-          <div id="activity" class="meta"></div>
         </div>
       </aside>
       <main>
@@ -76,10 +76,6 @@
           <p class="hint" id="memberHint" style="display:none">Tap the green or red dot on a date. Green = available, red = unavailable. Tap again to clear.</p>
           <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
           <div id="days" class="days"></div>
-        </div>
-        <div class="card" style="margin-top:12px">
-          <div class="section-label">Upcoming</div>
-          <div id="upcoming" class="event-list"></div>
         </div>
       </main>
     </div>
