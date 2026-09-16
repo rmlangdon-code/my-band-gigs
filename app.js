@@ -80,6 +80,27 @@ function formatMDY(iso) {
   const [y,m,d] = String(iso).slice(0,10).split("-");
   return `${m}/${d}/${y}`;
 }
+
+function timeOptions() {
+  const out = [];
+  for (let i = 0; i < 48; i++) {
+    const h24 = Math.floor(i / 2);
+    const mi = i % 2 ? "30" : "00";
+    const ampm = h24 >= 12 ? "PM" : "AM";
+    const h = h24 % 12 || 12;
+    out.push(h + ":" + mi + " " + ampm);
+  }
+  return out;
+}
+function fillTimeSelect(sel, value) {
+  if (!sel) return;
+  const opts = timeOptions();
+  let v = value || "";
+  if (v && !opts.includes(v)) opts.unshift(v);
+  sel.innerHTML = opts.map(t => `<option value="${t}">${t}</option>`).join("");
+  sel.value = v && opts.includes(v) ? v : (v || "7:00 PM");
+}
+
 function formatTime24to12(t) {
   if (!t) return "";
   const [h0, mi] = t.split(":");
@@ -280,8 +301,8 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evTitle").value = ev?.title || "";
   $("evType").value = ev?.type || "gig";
   $("evDate").value = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
-  $("evStart").value = ev ? formatTime24to12(ev.start) : "7:00 PM";
-  $("evEnd").value = ev ? formatTime24to12(ev.end) : "10:00 PM";
+  fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
+  fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
   $("evNotes").value = ev?.notes || "";
   const availDate = ev?.date || dateISO || $("evDate").value;

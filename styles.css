@@ -89,3 +89,10 @@ body.is-admin .admin-only-flex{display:flex}
 #monthLabel{text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .band-menu{width:120px;justify-self:center}
 .band-toggle{width:100%;text-align:center}
+
+input[type="date"]{color-scheme:dark}
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+  opacity:1;
+  cursor:pointer;
+}
