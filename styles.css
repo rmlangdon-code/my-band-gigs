@@ -34,7 +34,7 @@ button{cursor:pointer}
 .dot.reh{background:var(--rehearsal)}
 .dot.in{background:var(--available)}
 .dot.out{background:var(--booked)}
-.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal-head{display:grid;grid-template-columns:44px minmax(160px,1fr) 120px 44px;align-items:center;gap:8px}
 .cal-head h2{margin:0;font-size:22px}
 .weekdays,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .weekdays{margin:12px 0 6px;color:var(--muted);font-size:11px;text-transform:uppercase}
@@ -79,9 +79,13 @@ body.is-admin .admin-only-flex{display:flex}
 
 #eventModal .pick.on{outline:2px solid #fff;outline-offset:1px}
 
-.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cal-head{display:grid;grid-template-columns:44px minmax(160px,1fr) 120px 44px;align-items:center;gap:8px}
 .band-menu{position:relative;z-index:8}
 .band-toggle{background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:700;padding:6px 8px;text-transform:uppercase;letter-spacing:.04em}
 .band-toggle:hover,.band-menu.open .band-toggle{color:var(--accent)}
 .band-drop{display:none;position:absolute;top:100%;right:0;min-width:240px;background:var(--bg-elev);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:var(--shadow)}
 .band-menu:hover .band-drop,.band-menu.open .band-drop{display:block}
+
+#monthLabel{text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.band-menu{width:120px;justify-self:center}
+.band-toggle{width:100%;text-align:center}
