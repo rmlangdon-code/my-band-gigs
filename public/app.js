@@ -231,6 +231,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("modalTitle").textContent = !admin ? "Event details" : (asCopy ? "Duplicate event" : (ev ? "Edit event" : "Add gig or rehearsal"));
   ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue","evNotes"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
   $("saveEvent").style.display = admin ? "" : "none";
+  if ($("deleteEventBtn")) $("deleteEventBtn").style.display = admin && editingEventId ? "" : "none";
   $("evBand").innerHTML = ids.map(id => {
     const b = state.bands.find(x => x.id === id);
     return b ? `<option value="${b.id}">${b.name}</option>` : "";
@@ -295,15 +296,23 @@ document.addEventListener("click", async (e) => {
   if (band) { state.currentBandId = band.dataset.band; renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
   if (dot) { setDot(dot.dataset.date, dot.dataset.dot); return; }
+  const act = e.target.closest("[data-edit],[data-dup],[data-del]");
+  if (act) {
+    if (act.dataset.edit) openEventModal(null, act.dataset.edit);
+    else if (act.dataset.dup) openEventModal(null, act.dataset.dup, true);
+    else if (act.dataset.del) {
+      if (!confirm("Delete this event?")) return;
+      try {
+        await api("/api/events/" + act.dataset.del, { method: "DELETE" });
+        $("eventModal").classList.remove("open");
+        await loadState();
+        toast("Deleted");
+      } catch (err) { toast(err.message); }
+    }
+    return;
+  }
   const chip = e.target.closest("[data-eid]");
   if (chip) { openEventModal(null, chip.dataset.eid); return; }
-  if (e.target.dataset.edit) openEventModal(null, e.target.dataset.edit);
-  if (e.target.dataset.dup) openEventModal(null, e.target.dataset.dup, true);
-  if (e.target.dataset.del) {
-    if (!confirm("Delete this event?")) return;
-    try { await api("/api/events/" + e.target.dataset.del, { method: "DELETE" }); await loadState(); }
-    catch (err) { toast(err.message); }
-  }
   if (e.target.dataset.editMember) {
     const u = state.users.find(x => x.id === e.target.dataset.editMember);
     if (!u) return;
@@ -347,6 +356,17 @@ $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
+$("deleteEventBtn").onclick = async () => {
+  if (!editingEventId) return;
+  if (!confirm("Delete this event?")) return;
+  try {
+    await api("/api/events/" + editingEventId, { method: "DELETE" });
+    $("eventModal").classList.remove("open");
+    editingEventId = null;
+    await loadState();
+    toast("Deleted");
+  } catch (err) { toast(err.message); }
+};
 $("eventModal").addEventListener("click", e => { if (e.target.id === "eventModal") $("eventModal").classList.remove("open"); });
 $("addBandBtn").onclick = async () => {
   const name = prompt("Band name?");
