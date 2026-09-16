@@ -99,6 +99,39 @@ function parse12to24(s) {
   return `${String(h).padStart(2,"0")}:${mi}`;
 }
 
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+async function enablePush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    let perm = Notification.permission;
+    if (perm === "default") perm = await Notification.requestPermission();
+    if (perm !== "granted") return;
+    const { key } = await api("/api/push/key");
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key)
+    });
+    await api("/api/push/subscribe", { method: "POST", body: { subscription: sub } });
+  } catch (err) { console.log("push", err); }
+}
+function openDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const eventId = q.get("event");
+  const date = q.get("date");
+  if (eventId && state.events.some(e => e.id === eventId)) openEventModal(null, eventId);
+  else if (date) {
+    const [y,m] = date.split("-");
+    if (y && m) { viewYear = +y; viewMonth = +m - 1; renderCalendar(); }
+  }
+}
+
 async function loadState() {
   const data = await api("/api/state");
   if (data.events) data.events = data.events.map(e => ({ ...e, date: normDate(e.date) }));
@@ -106,6 +139,8 @@ async function loadState() {
   if (state.currentBandId !== "all" && !state.bands.some(b => b.id === state.currentBandId)) state.currentBandId = "all";
   document.body.classList.toggle("is-admin", isAdmin());
   renderAll();
+  enablePush();
+  openDeepLink();
 }
 
 function renderAuth() {

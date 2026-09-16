@@ -5,6 +5,7 @@ const { Pool } = require("pg");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const webpush = require("web-push");
 
 const PUBLIC_DIR = [
   path.join(__dirname, "public"),
@@ -15,6 +16,11 @@ const PUBLIC_DIR = [
 
 const PORT = process.env.PORT || 10000;
 const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || "BK6TyU4PiKPLKXGX8UPmhjL7UuBdhoKYlXoQQl1tUhNeGrKnkAdxV9yESI1RRKH9IUsPK-iXCAVQlTOeA_NBHhM";
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || "X0QDXAlTwSe2L3ohpAje4J9uuluPUzGq0_ZaLZUlpQQ";
+try {
+  webpush.setVapidDetails("mailto:admin@mybandgigs.com", VAPID_PUBLIC, VAPID_PRIVATE);
+} catch (err) { console.error("VAPID setup", err.message); }
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) { console.error("DATABASE_URL required"); process.exit(1); }
 
@@ -82,6 +88,12 @@ async function initDb() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE;
+    CREATE TABLE IF NOT EXISTS push_subs (
+      endpoint TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL
+    );
   `);
 }
 
@@ -107,6 +119,31 @@ async function adminOfAny(userId) {
   const r = await pool.query("SELECT 1 FROM memberships WHERE user_id=$1 AND role='admin' LIMIT 1", [userId]);
   return r.rowCount > 0;
 }
+
+async function notifyBand(bandId, payload, exceptUserId) {
+  try {
+    const rows = (await pool.query(
+      `SELECT s.endpoint, s.p256dh, s.auth FROM push_subs s
+       JOIN memberships m ON m.user_id = s.user_id
+       WHERE m.band_id=$1`, [bandId]
+    )).rows;
+    const body = JSON.stringify(payload);
+    await Promise.all(rows.map(async sub => {
+      if (exceptUserId && False) return;
+      try {
+        await webpush.sendNotification({
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth }
+        }, body);
+      } catch (err) {
+        if (err.statusCode === 404 || err.statusCode === 410)
+          await pool.query("DELETE FROM push_subs WHERE endpoint=$1", [sub.endpoint]);
+      }
+    }));
+  } catch (err) { console.error("push", err.message); }
+}
+
+
 
 app.post("/api/signup", async (req, res) => {
   try {
@@ -226,6 +263,9 @@ app.post("/api/events", auth, async (req, res) => {
     await pool.query("INSERT INTO activity (id, band_id, message) VALUES ($1,$2,$3)",
       [id(), bandId, `${req.user.name} added ${ev.type}: ${ev.title} (${ev.date})`]);
     res.json(ev);
+    const band = (await pool.query("SELECT short, name FROM bands WHERE id=$1", [bandId])).rows[0];
+    const label = ((band && band.short) ? band.short + " - " : "") + ev.title;
+    notifyBand(bandId, { title: "New " + ev.type, body: label, eventId: ev.id, date: ev.date });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not save event" }); }
 });
 
@@ -242,6 +282,10 @@ app.put("/api/events/:id", auth, async (req, res) => {
        venue ?? old.venue, notes ?? old.notes, bandId || old.band_id, req.params.id]
     );
     res.json({ ok: true });
+    const bid = bandId || old.band_id;
+    const band = (await pool.query("SELECT short FROM bands WHERE id=$1", [bid])).rows[0];
+    const t = title || old.title;
+    notifyBand(bid, { title: "Event updated", body: ((band && band.short) ? band.short + " - " : "") + t, eventId: req.params.id, date: date || old.date });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not update event" }); }
 });
 
@@ -253,6 +297,7 @@ app.delete("/api/events/:id", auth, async (req, res) => {
     if (!(await isAdminOf(req.user.id, old.band_id))) return res.status(403).json({ error: "Only admins can delete events" });
     await pool.query("DELETE FROM events WHERE id=$1", [req.params.id]);
     res.json({ ok: true });
+    notifyBand(old.band_id, { title: "Event deleted", body: old.title, eventId: "", date: old.date });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete event" }); }
 });
 
@@ -378,6 +423,21 @@ app.post("/api/setup", async (req, res) => {
     await pool.query("UPDATE users SET password_hash=$1, setup_token=NULL WHERE id=$2", [await bcrypt.hash(password, 10), user.id]);
     res.json({ token: sign(user), user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not finish setup" }); }
+});
+
+
+app.get("/api/push/key", auth, (req, res) => res.json({ key: VAPID_PUBLIC }));
+app.post("/api/push/subscribe", auth, async (req, res) => {
+  try {
+    const sub = req.body.subscription || req.body;
+    if (!sub || !sub.endpoint || !sub.keys) return res.status(400).json({ error: "Bad subscription" });
+    await pool.query(
+      `INSERT INTO push_subs (endpoint, user_id, p256dh, auth) VALUES ($1,$2,$3,$4)
+       ON CONFLICT (endpoint) DO UPDATE SET user_id=$2, p256dh=$3, auth=$4`,
+      [sub.endpoint, req.user.id, sub.keys.p256dh, sub.keys.auth]
+    );
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not save alerts" }); }
 });
 
 app.get("*", (req, res) => {
