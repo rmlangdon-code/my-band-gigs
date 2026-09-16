@@ -114,9 +114,11 @@ function renderAuth() {
 }
 function renderBands() {
   const items = [{ id: "all", name: "All bands" }, ...state.bands.map(b => ({ id: b.id, name: b.name }))];
-  const sel = $("bandSelect");
-  if (!sel) return;
-  sel.innerHTML = items.map(b => `<option value="${b.id}" ${state.currentBandId === b.id ? "selected" : ""}>${b.name}</option>`).join("");
+  if ($("bands")) {
+    $("bands").innerHTML = items.map(b =>
+      `<button class="band-item ${state.currentBandId === b.id ? "active" : ""}" data-band="${b.id}"><strong>${b.name}</strong></button>`
+    ).join("");
+  }
   const showAdminBand = isAdmin() && state.currentBandId !== "all";
   if ($("editAbbrBtn")) $("editAbbrBtn").style.display = showAdminBand ? "" : "none";
   if ($("deleteBandBtn")) $("deleteBandBtn").style.display = showAdminBand ? "" : "none";
@@ -308,7 +310,7 @@ document.addEventListener("click", async (e) => {
     return;
   }
   const band = e.target.closest("[data-band]");
-  if (band) { state.currentBandId = band.dataset.band; renderAll(); return; }
+  if (band) { state.currentBandId = band.dataset.band; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
   if (dot) { setDot(dot.dataset.date, dot.dataset.dot); return; }
   const act = e.target.closest("[data-edit],[data-dup],[data-del]");
@@ -383,7 +385,10 @@ $("deleteEventBtn").onclick = async () => {
   } catch (err) { toast(err.message); }
 };
 $("eventModal").addEventListener("click", e => { if (e.target.id === "eventModal") $("eventModal").classList.remove("open"); });
-$("bandSelect").onchange = () => { state.currentBandId = $("bandSelect").value; renderAll(); };
+$("bandToggle").onclick = (e) => { e.stopPropagation(); $("bandMenu").classList.toggle("open"); };
+document.addEventListener("click", (e) => {
+  if ($("bandMenu") && !$("bandMenu").contains(e.target)) $("bandMenu").classList.remove("open");
+});
 $("addBandBtn").onclick = async () => {
   const name = prompt("Band name?");
   if (!name) return;

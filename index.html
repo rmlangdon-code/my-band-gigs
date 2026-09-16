@@ -36,19 +36,19 @@
       </div>
     </header>
     <div class="home">
-      <div class="card band-bar">
-        <label class="section-label" for="bandSelect">Your bands</label>
-        <select id="bandSelect"></select>
-        <div class="band-actions">
-          <button class="btn" id="addBandBtn">+ Add band</button>
-          <button class="btn" id="editAbbrBtn">Abbreviation</button>
-          <button class="btn btn-danger" id="deleteBandBtn">Delete band</button>
-        </div>
-      </div>
       <div class="card">
         <div class="cal-head">
           <button class="btn" id="prevMonth">‹</button>
           <h2 id="monthLabel"></h2>
+          <div class="band-menu" id="bandMenu">
+            <button type="button" class="band-toggle" id="bandToggle">Your bands</button>
+            <div class="band-drop" id="bandDrop">
+              <div id="bands"></div>
+              <button class="btn" id="addBandBtn" style="width:100%;margin-top:6px">+ Add band</button>
+              <button class="btn" id="editAbbrBtn" style="width:100%;margin-top:6px">Abbreviation</button>
+              <button class="btn btn-danger" id="deleteBandBtn" style="width:100%;margin-top:6px">Delete band</button>
+            </div>
+          </div>
           <button class="btn" id="nextMonth">›</button>
         </div>
         <div class="legend">
