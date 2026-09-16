@@ -35,49 +35,49 @@
         <button class="btn btn-ghost" id="logoutBtn">Log out</button>
       </div>
     </header>
-    <div class="layout">
-      <aside>
-        <div class="card">
-          <div class="section-label">Your bands</div>
-          <div id="bands"></div>
-          <button class="btn" id="addBandBtn" style="width:100%;margin-top:8px">+ Add band</button>
+    <div class="home">
+      <div class="card band-bar">
+        <label class="section-label" for="bandSelect">Your bands</label>
+        <select id="bandSelect"></select>
+        <div class="band-actions">
+          <button class="btn" id="addBandBtn">+ Add band</button>
+          <button class="btn" id="editAbbrBtn">Abbreviation</button>
+          <button class="btn btn-danger" id="deleteBandBtn">Delete band</button>
         </div>
-        <div class="card" style="margin-top:12px">
-          <div class="section-label">Upcoming</div>
-          <div id="upcoming" class="event-list"></div>
+      </div>
+      <div class="card">
+        <div class="cal-head">
+          <button class="btn" id="prevMonth">‹</button>
+          <h2 id="monthLabel"></h2>
+          <button class="btn" id="nextMonth">›</button>
         </div>
-        <div class="card admin-only" id="membersCard" style="margin-top:12px">
-          <div class="section-label">Members</div>
-          <div id="members"></div>
-          <div class="form-row" style="margin-top:10px"><label>First name</label><input id="inviteFirst" /></div>
-          <div class="form-row"><label>Last name</label><input id="inviteLast" /></div>
-          <div class="form-row"><label>Birthday</label><input id="inviteBday" type="date" /></div>
-          <div class="form-row"><label>Email</label><input id="inviteEmail" /></div>
-          <div class="hint">Check bands, then add. Link is copied — paste it to them.</div>
-          <div id="inviteBands" class="hint" style="margin:8px 0"></div>
-          <button class="btn" id="inviteBtn">Add member & copy link</button>
-          <div id="inviteOut" class="invite-box" style="margin-top:8px;display:none"></div>
+        <div class="legend">
+          <span><i class="dot gig"></i>Gig</span>
+          <span><i class="dot reh"></i>Rehearsal</span>
+          <span><i class="dot in"></i>Available</span>
+          <span><i class="dot out"></i>Unavailable</span>
+          <button class="btn btn-primary admin-only" id="addEventBtn">Add event</button>
         </div>
-      </aside>
-      <main>
-        <div class="card">
-          <div class="cal-head">
-            <button class="btn" id="prevMonth">‹</button>
-            <h2 id="monthLabel"></h2>
-            <button class="btn" id="nextMonth">›</button>
-          </div>
-          <div class="legend">
-            <span><i class="dot gig"></i>Gig</span>
-            <span><i class="dot reh"></i>Rehearsal</span>
-            <span><i class="dot in"></i>Available</span>
-            <span><i class="dot out"></i>Unavailable</span>
-            <button class="btn btn-primary admin-only" id="addEventBtn">Add event</button>
-          </div>
-          <p class="hint" id="memberHint" style="display:none">Tap the green or red dot on a date. Green = available, red = unavailable. Tap again to clear.</p>
-          <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
-          <div id="days" class="days"></div>
-        </div>
-      </main>
+        <p class="hint" id="memberHint" style="display:none">Tap the green or red dot on a date. Green = available, red = unavailable. Tap again to clear.</p>
+        <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+        <div id="days" class="days"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="section-label">Upcoming</div>
+        <div id="upcoming" class="event-list"></div>
+      </div>
+      <div class="card admin-only" id="membersCard" style="margin-top:12px">
+        <div class="section-label">Members</div>
+        <div id="members"></div>
+        <div class="form-row" style="margin-top:10px"><label>First name</label><input id="inviteFirst" /></div>
+        <div class="form-row"><label>Last name</label><input id="inviteLast" /></div>
+        <div class="form-row"><label>Birthday</label><input id="inviteBday" type="date" /></div>
+        <div class="form-row"><label>Email</label><input id="inviteEmail" /></div>
+        <div class="hint">Check bands, then add. Link is copied — paste it to them.</div>
+        <div id="inviteBands" class="hint" style="margin:8px 0"></div>
+        <button class="btn" id="inviteBtn">Add member & copy link</button>
+        <div id="inviteOut" class="invite-box" style="margin-top:8px;display:none"></div>
+      </div>
     </div>
   </div>
 

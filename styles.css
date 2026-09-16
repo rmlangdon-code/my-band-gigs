@@ -20,8 +20,9 @@ button{cursor:pointer}
 .btn-primary{background:var(--accent);color:#1a1404;border-color:transparent;font-weight:700}
 .btn-ghost{background:transparent}
 .btn-danger{background:#3a1518;border-color:#5a2226;color:#ffb4b4}
-.layout{display:grid;grid-template-columns:280px 1fr;gap:16px}
-@media(max-width:800px){.layout{grid-template-columns:1fr}}
+.home{display:flex;flex-direction:column;gap:12px}
+.band-bar select{width:100%;margin:6px 0 8px}
+.band-actions{display:flex;gap:8px;flex-wrap:wrap}
 .card{background:var(--bg-elev);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
 .section-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .band-item{display:block;width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:10px;padding:10px;margin-bottom:4px}

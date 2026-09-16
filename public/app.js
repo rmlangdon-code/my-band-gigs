@@ -114,9 +114,12 @@ function renderAuth() {
 }
 function renderBands() {
   const items = [{ id: "all", name: "All bands" }, ...state.bands.map(b => ({ id: b.id, name: b.name }))];
-  $("bands").innerHTML = items.map(b =>
-    `<button class="band-item ${state.currentBandId === b.id ? "active" : ""}" data-band="${b.id}"><strong>${b.name}</strong></button>`
-  ).join("") + (isAdmin() && state.currentBandId !== "all" ? `<button class="btn" id="editAbbrBtn" style="width:100%;margin-top:6px">Set calendar abbreviation</button><button class="btn btn-danger" id="deleteBandBtn" style="width:100%;margin-top:6px">Delete this band</button>` : "");
+  const sel = $("bandSelect");
+  if (!sel) return;
+  sel.innerHTML = items.map(b => `<option value="${b.id}" ${state.currentBandId === b.id ? "selected" : ""}>${b.name}</option>`).join("");
+  const showAdminBand = isAdmin() && state.currentBandId !== "all";
+  if ($("editAbbrBtn")) $("editAbbrBtn").style.display = showAdminBand ? "" : "none";
+  if ($("deleteBandBtn")) $("deleteBandBtn").style.display = showAdminBand ? "" : "none";
 }
 function renderCalendar() {
   const y = viewYear, m = viewMonth;
@@ -380,6 +383,7 @@ $("deleteEventBtn").onclick = async () => {
   } catch (err) { toast(err.message); }
 };
 $("eventModal").addEventListener("click", e => { if (e.target.id === "eventModal") $("eventModal").classList.remove("open"); });
+$("bandSelect").onchange = () => { state.currentBandId = $("bandSelect").value; renderAll(); };
 $("addBandBtn").onclick = async () => {
   const name = prompt("Band name?");
   if (!name) return;
