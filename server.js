@@ -201,6 +201,14 @@ app.put("/api/bands/:id", auth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not update band" }); }
 });
 
+app.delete("/api/bands/:id", auth, async (req, res) => {
+  try {
+    if (!(await isAdminOf(req.user.id, req.params.id))) return res.status(403).json({ error: "Only admins can delete a band" });
+    await pool.query("DELETE FROM bands WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete band" }); }
+});
+
 app.post("/api/events", auth, async (req, res) => {
   try {
     const { bandId, type, title, date, start, end, venue, notes } = req.body;

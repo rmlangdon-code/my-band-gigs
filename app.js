@@ -116,7 +116,7 @@ function renderBands() {
   const items = [{ id: "all", name: "All bands" }, ...state.bands.map(b => ({ id: b.id, name: b.name }))];
   $("bands").innerHTML = items.map(b =>
     `<button class="band-item ${state.currentBandId === b.id ? "active" : ""}" data-band="${b.id}"><strong>${b.name}</strong></button>`
-  ).join("") + (isAdmin() && state.currentBandId !== "all" ? `<button class="btn" id="editAbbrBtn" style="width:100%;margin-top:6px">Set calendar abbreviation</button>` : "");
+  ).join("") + (isAdmin() && state.currentBandId !== "all" ? `<button class="btn" id="editAbbrBtn" style="width:100%;margin-top:6px">Set calendar abbreviation</button><button class="btn btn-danger" id="deleteBandBtn" style="width:100%;margin-top:6px">Delete this band</button>` : "");
 }
 function renderCalendar() {
   const y = viewYear, m = viewMonth;
@@ -284,6 +284,18 @@ async function setDot(iso, status) {
 }
 
 document.addEventListener("click", async (e) => {
+  if (e.target.id === "deleteBandBtn") {
+    const b = currentBand();
+    if (!b?.id || b.id === "all") return;
+    if (!confirm("Delete " + b.name + "? This removes its gigs, rehearsals, and member list for that band.")) return;
+    try {
+      await api("/api/bands/" + b.id, { method: "DELETE" });
+      state.currentBandId = "all";
+      await loadState();
+      toast("Band deleted");
+    } catch (err) { toast(err.message); }
+    return;
+  }
   if (e.target.id === "editAbbrBtn") {
     const b = currentBand();
     const short = prompt("Calendar abbreviation for " + b.name + "?", b.short || bandShort(b.id) || "");
