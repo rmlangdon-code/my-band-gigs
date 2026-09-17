@@ -90,7 +90,7 @@ body.is-admin .admin-only-flex{display:flex}
 .band-menu{width:120px;justify-self:center}
 .band-toggle{width:100%;text-align:center}
 
-input[type="date"]{color-scheme:dark;color:#ffffff}
+input ::-webkit-datetime-edit{color:#ffffff}
 input[type="date"]::-webkit-calendar-picker-indicator{
   filter:invert(1);
   opacity:1;
