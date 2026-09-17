@@ -9,7 +9,7 @@
 html,body{margin:0;background:var(--bg);color:var(--text);min-height:100%}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
-.app{max-width:1180px;margin:0 auto;padding:18px 16px 80px}
+.app{max-width:1180px;margin:0 auto;padding:18px 16px 80px;overflow-x:hidden}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 18px}
 .brand{display:flex;align-items:center;gap:10px}
 .logo{min-width:42px;height:38px;padding:0 7px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#c4841a);display:grid;place-items:center;font-weight:800;color:#1a1404;font-size:11px;letter-spacing:.04em}
@@ -34,15 +34,15 @@ button{cursor:pointer}
 .dot.reh{background:var(--rehearsal)}
 .dot.in{background:var(--available)}
 .dot.out{background:var(--booked)}
-.cal-head{display:grid;grid-template-columns:44px minmax(160px,1fr) 120px 44px;align-items:center;gap:8px}
+.cal-head{display:grid;grid-template-columns:40px minmax(0,1fr) auto 40px;align-items:center;gap:6px;width:100%}
 .cal-head h2{margin:0;font-size:22px}
-.weekdays,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.weekdays,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;width:100%}
 .weekdays{margin:12px 0 6px;color:var(--muted);font-size:11px;text-transform:uppercase}
-.day{min-height:96px;border:1px solid var(--line);background:#12141a;border-radius:10px;padding:6px;text-align:left;width:100%}
+.day{min-height:96px;min-width:0;overflow:hidden;border:1px solid var(--line);background:#12141a;border-radius:10px;padding:6px;text-align:left;width:100%}
 .day.out{opacity:.35}
 .day.today{outline:1px solid var(--accent)}
 .day .n{font-size:12px;color:var(--muted)}
-.chip{display:block;font-size:10px;border-radius:6px;padding:2px 4px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.chip{display:block;max-width:100%;font-size:10px;border-radius:6px;padding:2px 4px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .chip.gig{background:rgba(255,255,255,.08);color:#fff}
 .chip.rehearsal{background:rgba(91,140,255,.16);color:#8eb4ff}
 .avail-mark{font-size:9px;line-height:1.2}
@@ -79,7 +79,7 @@ body.is-admin .admin-only-flex{display:flex}
 
 #eventModal .pick.on{outline:2px solid #fff;outline-offset:1px}
 
-.cal-head{display:grid;grid-template-columns:44px minmax(160px,1fr) 120px 44px;align-items:center;gap:8px}
+.cal-head{display:grid;grid-template-columns:40px minmax(0,1fr) auto 40px;align-items:center;gap:6px;width:100%}
 .band-menu{position:relative;z-index:8}
 .band-toggle{background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:700;padding:6px 8px;text-transform:uppercase;letter-spacing:.04em}
 .band-toggle:hover,.band-menu.open .band-toggle{color:var(--accent)}
@@ -95,4 +95,30 @@ input[type="date"]::-webkit-calendar-picker-indicator{
   filter:invert(1);
   opacity:1;
   cursor:pointer;
+}
+
+.card{max-width:100%;overflow:hidden}
+#eventModal .pick.on{outline:2px solid #fff;outline-offset:1px}
+input[type="date"]{color-scheme:dark;color:#fff}
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fill-color:#fff}
+@media(max-width:700px){
+  .app{padding:10px 8px 72px}
+  .card{padding:10px}
+  .topbar{align-items:flex-start}
+  .cal-head h2,#monthLabel{font-size:16px}
+  .band-menu{width:auto;min-width:0}
+  .band-toggle{font-size:10px;padding:4px 2px;letter-spacing:.02em}
+  .weekdays{font-size:9px;gap:3px}
+  .days{gap:3px}
+  .day{min-height:70px;padding:4px;border-radius:8px}
+  .chip{font-size:8px;padding:1px 3px}
+  .dots{gap:4px;margin-top:4px}
+  .pick{width:14px;height:14px}
+  .glance{max-height:42px;overflow:hidden}
+  .avail-mark{font-size:8px}
 }
