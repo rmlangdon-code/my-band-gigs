@@ -4,6 +4,7 @@ let state = { currentUserId: "", isAdmin: false, users: [], bands: [], membershi
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 let editingEventId = null;
+let upcomingShown = 10;
 let duplicating = false;
 
 async function api(path, opts = {}) {
@@ -229,8 +230,12 @@ function renderCalendar() {
 }
 function renderUpcoming() {
   const today = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-  const upcoming = eventsForBand(state.currentBandId).filter(e => e.date >= today).slice(0, 8);
+  const all = eventsForBand(state.currentBandId).filter(e => e.date >= today);
+  const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
+  const more = all.length > upcomingShown
+    ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
+    : "";
   $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
     <div class="event" data-eid="${e.id}">
       <h3 class="${e.type}">${eventLabel(e)}</h3>
@@ -241,7 +246,7 @@ function renderUpcoming() {
         <button class="btn" data-dup="${e.id}">Duplicate</button>
         <button class="btn btn-danger" data-del="${e.id}">Delete</button>
       </div>` : ""}
-    </div>`).join("") : `<div class="hint">No upcoming events.</div>`;
+    </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
 }
 function renderMembers() {
   if (!isAdmin()) { $("members").innerHTML = ""; return; }
@@ -366,8 +371,9 @@ document.addEventListener("click", async (e) => {
     catch (err) { toast(err.message); }
     return;
   }
+  if (e.target.id === "showMoreUpcoming") { upcomingShown += 10; renderUpcoming(); return; }
   const band = e.target.closest("[data-band]");
-  if (band) { state.currentBandId = band.dataset.band; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
+  if (band) { state.currentBandId = band.dataset.band; upcomingShown = 10; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
   if (dot) { setDot(dot.dataset.date, dot.dataset.dot); return; }
   const act = e.target.closest("[data-edit],[data-dup],[data-del]");
