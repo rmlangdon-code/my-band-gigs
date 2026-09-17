@@ -17,14 +17,12 @@
         <div class="logo">MBG</div>
         <div><h1>My Band Gigs</h1><small>Gigs, rehearsals, who’s available</small></div>
       </div>
-      <div class="form-row"><label>Name (signup only)</label><input id="loginName" /></div>
-      <div class="form-row"><label>Email</label><input id="loginEmail" type="email" /></div>
-      <div class="form-row"><label>Password</label><input id="loginPass" type="password" /></div>
-      <p class="hint" id="authHint">Members use the setup link from your admin. First account is the admin.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="loginBtn">Sign in</button>
-        <button class="btn" id="signupBtn">Create account</button>
-      </div>
+      <div class="form-row" id="nameRow" style="display:none"><label>Name</label><input id="loginName" /></div>
+      <div class="form-row"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" /></div>
+      <div class="form-row"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" /></div>
+      <p class="hint" id="authHint">Use the email the admin invited.</p>
+      <button class="btn btn-primary" id="loginBtn" style="width:100%">Sign in</button>
+      <button class="btn" id="signupBtn" style="display:none;width:100%;margin-top:8px">Create account</button>
     </div>
   </div>
 

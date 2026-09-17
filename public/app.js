@@ -420,8 +420,9 @@ document.addEventListener("click", async (e) => {
 
 $("loginBtn").onclick = async () => {
   try {
-    const data = await api("/api/login", { method: "POST", body: { email: $("loginEmail").value, password: $("loginPass").value } });
-    token = data.token; localStorage.setItem("mbg.token", token); await loadState();
+    const email = $("loginEmail").value.trim();
+    const data = await api("/api/login", { method: "POST", body: { email, password: $("loginPass").value } });
+    token = data.token; localStorage.setItem("mbg.token", token); localStorage.setItem("mbg.email", email); await loadState();
   } catch (err) { toast(err.message); }
 };
 $("signupBtn").onclick = async () => {
