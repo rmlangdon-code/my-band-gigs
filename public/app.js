@@ -293,6 +293,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue","evNotes"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
   $("saveEvent").style.display = admin ? "" : "none";
   if ($("deleteEventBtn")) $("deleteEventBtn").style.display = admin && editingEventId ? "" : "none";
+  if ($("dupEventBtn")) $("dupEventBtn").style.display = admin && eventId && !asCopy ? "" : "none";
   $("evBand").innerHTML = ids.map(id => {
     const b = state.bands.find(x => x.id === id);
     return b ? `<option value="${b.id}">${b.name}</option>` : "";
@@ -429,6 +430,10 @@ $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
+$("dupEventBtn").onclick = () => {
+  if (!editingEventId) return;
+  openEventModal(null, editingEventId, true);
+};
 $("deleteEventBtn").onclick = async () => {
   if (!editingEventId) return;
   if (!confirm("Delete this event?")) return;
