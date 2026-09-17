@@ -93,7 +93,14 @@
       <div class="form-row"><label>Type</label>
         <select id="evType"><option value="gig">Gig</option><option value="rehearsal">Rehearsal</option></select>
       </div>
-      <div class="form-row"><label>Date</label><input id="evDate" type="date" /></div>
+      <div class="form-row"><label>Date</label>
+        <div class="date-wrap">
+          <input id="evDate" type="date" />
+          <button type="button" class="date-cal-btn" id="evDateBtn" aria-label="Open calendar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="form-row"><label>Start</label><select id="evStart"></select></div>
       <div class="form-row"><label>End</label><select id="evEnd"></select></div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>

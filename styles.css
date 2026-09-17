@@ -129,3 +129,8 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
   .glance{max-height:42px;overflow:hidden}
   .avail-mark{font-size:8px}
 }
+
+.date-wrap{position:relative}
+.date-wrap input[type="date"]{width:100%;padding-right:42px;color:#fff;-webkit-text-fill-color:#fff;color-scheme:dark}
+.date-wrap input[type="date"]::-webkit-calendar-picker-indicator{opacity:0;position:absolute;right:8px;width:28px;height:28px}
+.date-cal-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;padding:4px;line-height:0;pointer-events:none}
