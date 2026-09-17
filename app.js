@@ -428,6 +428,8 @@ $("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
+$("evDate").addEventListener("click", () => { try { $("evDate").showPicker(); } catch (e) {} });
+$("evDate").addEventListener("focus", () => { try { $("evDate").showPicker(); } catch (e) {} });
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
 $("dupEventBtn").onclick = () => {
