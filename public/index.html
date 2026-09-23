@@ -34,6 +34,7 @@
       </div>
       <div class="top-actions">
         <span class="pill" id="who"></span>
+        <button class="btn btn-ghost" id="profileBtn">Profile</button>
         <button class="btn btn-ghost" id="logoutBtn">Log out</button>
       </div>
     </header>
@@ -145,6 +146,26 @@
         <button class="btn" id="resendLinkBtn">New setup link</button>
         <button class="btn" id="cancelMemberBtn">Cancel</button>
       </div>
+    </div>
+  </div>
+  <div id="profileModal" class="overlay">
+    <div class="modal-card">
+      <h2>My profile</h2>
+      <div class="form-row"><label>First name</label><input id="profFirst" /></div>
+      <div class="form-row"><label>Last name</label><input id="profLast" /></div>
+      <div class="form-row"><label>Phone</label><input id="profPhone" type="tel" /></div>
+      <div class="form-row"><label>Email (login)</label><input id="profEmail" type="email" /></div>
+      <div class="form-row"><label>Birthday</label><input id="profBday" type="date" /></div>
+      <button class="btn btn-primary" id="saveProfileBtn">Save profile</button>
+      <h2 style="margin-top:22px">Password</h2>
+      <div class="form-row"><label>Current password</label><input id="profCurPass" type="password" /></div>
+      <div class="form-row"><label>New password</label><input id="profNewPass" type="password" /></div>
+      <button class="btn" id="savePassBtn">Change password</button>
+      <h2 style="margin-top:22px">Subscribe in Google / Apple Calendar</h2>
+      <p class="hint">Copy a link, then in Google Calendar: Other calendars → From URL.</p>
+      <button class="btn" id="copyCalAll" style="width:100%;margin-top:8px">Copy All gigs link</button>
+      <button class="btn" id="copyCalMine" style="width:100%;margin-top:8px">Copy My gigs link</button>
+      <div style="margin-top:16px"><button class="btn" id="closeProfileBtn">Close</button></div>
     </div>
   </div>
   <div class="toast-wrap" id="toasts"></div>

@@ -483,6 +483,50 @@ $("signupBtn").onclick = async () => {
     token = data.token; localStorage.setItem("mbg.token", token); await loadState();
   } catch (err) { toast(err.message); }
 };
+
+async function openProfile() {
+  const me = currentUser();
+  $("profFirst").value = me.firstName || (me.name || "").split(" ")[0] || "";
+  $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
+  $("profPhone").value = me.phone || "";
+  $("profEmail").value = me.email || "";
+  $("profBday").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
+  $("profCurPass").value = "";
+  $("profNewPass").value = "";
+  $("profileModal").classList.add("open");
+}
+if ($("profileBtn")) $("profileBtn").onclick = openProfile;
+if ($("closeProfileBtn")) $("closeProfileBtn").onclick = () => $("profileModal").classList.remove("open");
+if ($("profileModal")) $("profileModal").addEventListener("click", e => { if (e.target.id === "profileModal") $("profileModal").classList.remove("open"); });
+if ($("saveProfileBtn")) $("saveProfileBtn").onclick = async () => {
+  try {
+    await api("/api/me", { method: "PUT", body: {
+      firstName: $("profFirst").value, lastName: $("profLast").value,
+      phone: $("profPhone").value, email: $("profEmail").value, birthday: $("profBday").value
+    }});
+    localStorage.setItem("mbg.email", $("profEmail").value.trim());
+    await loadState();
+    toast("Profile saved");
+  } catch (err) { toast(err.message); }
+};
+if ($("savePassBtn")) $("savePassBtn").onclick = async () => {
+  try {
+    await api("/api/me/password", { method: "PUT", body: { current: $("profCurPass").value, next: $("profNewPass").value } });
+    $("profCurPass").value = ""; $("profNewPass").value = "";
+    toast("Password changed");
+  } catch (err) { toast(err.message); }
+};
+async function copyCal(kind) {
+  try {
+    const links = await api("/api/me/calendar");
+    const url = kind === "mine" ? links.mine : links.all;
+    await navigator.clipboard.writeText(url);
+    toast("Link copied. Paste it in Google Calendar → From URL");
+  } catch (err) { toast(err.message); }
+}
+if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
+if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
+
 $("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"); document.body.classList.remove("is-admin"); renderAuth(); };
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
