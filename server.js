@@ -34,6 +34,16 @@ app.use(express.json());
 if (PUBLIC_DIR) app.use(express.static(PUBLIC_DIR));
 
 const id = () => crypto.randomUUID();
+function parseBirthday(v) {
+  if (!v) return null;
+  const s = String(v).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return iso[1] + "-" + iso[2] + "-" + iso[3];
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return mdy[3] + "-" + String(mdy[1]).padStart(2,"0") + "-" + String(mdy[2]).padStart(2,"0");
+  return null;
+}
+
 function fmtDateMDY(iso) {
   if (!iso) return "(none)";
   const d = String(iso).slice(0, 10);
@@ -393,7 +403,7 @@ app.post("/api/members", auth, async (req, res) => {
     const lastName = (req.body.lastName || "").trim();
     const name = `${firstName} ${lastName}`.trim();
     const email = (req.body.email || "").trim().toLowerCase();
-    const birthday = req.body.birthday || null;
+    const birthday = parseBirthday(req.body.birthday);
     let bandIds = Array.isArray(req.body.bandIds) ? req.body.bandIds.filter(Boolean) : [];
     if (!name || !email) return res.status(400).json({ error: "First name, last name, and email required" });
     if (!bandIds.length) return res.status(400).json({ error: "Pick at least one band" });
@@ -430,7 +440,7 @@ app.put("/api/members/:id", auth, async (req, res) => {
     const lastName = (req.body.lastName || "").trim();
     const name = `${firstName} ${lastName}`.trim();
     const email = (req.body.email || "").trim().toLowerCase();
-    const birthday = req.body.birthday || null;
+    const birthday = parseBirthday(req.body.birthday);
     const role = req.body.role === "admin" ? "admin" : "member";
     const bandIds = Array.isArray(req.body.bandIds) ? req.body.bandIds.filter(Boolean) : [];
     const target = (await pool.query("SELECT * FROM users WHERE id=$1", [userId])).rows[0];
@@ -594,7 +604,7 @@ app.put("/api/me", auth, async (req, res) => {
     const lastName = (req.body.lastName || "").trim();
     const phone = (req.body.phone || "").trim();
     const email = (req.body.email || "").trim().toLowerCase();
-    const birthday = req.body.birthday || null;
+    const birthday = parseBirthday(req.body.birthday);
     if (!firstName || !email) return res.status(400).json({ error: "First name and email required" });
     const taken = await pool.query("SELECT id FROM users WHERE email=$1 AND id<>$2", [email, req.user.id]);
     if (taken.rowCount) return res.status(400).json({ error: "That email is already in use" });

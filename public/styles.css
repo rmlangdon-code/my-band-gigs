@@ -197,3 +197,29 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 
 .note-item{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;background:#101217}
 .note-text{margin-top:4px;color:#fff;white-space:pre-wrap}
+
+.glance{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:11px;
+  line-height:1.2;
+  cursor:pointer;
+  color:#9fd59f;
+}
+.date-wrap{position:relative}
+.date-wrap input[type="date"]{
+  position:absolute !important;
+  right:4px;
+  top:50%;
+  transform:translateY(-50%);
+  width:40px !important;
+  height:40px !important;
+  opacity:0 !important;
+  pointer-events:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  z-index:3;
+}
+.date-cal-btn{z-index:2;pointer-events:none}

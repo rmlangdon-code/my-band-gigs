@@ -222,7 +222,7 @@ function renderCalendar() {
         if (status === "AVAILABLE") inn++;
         if (status === "UNAVAILABLE") outn++;
       });
-      extra = `<div class="glance avail-mark" data-roster="both" data-date="${iso}"><span class="AVAILABLE">${inn} in</span> · <span class="UNAVAILABLE">${outn} out</span></div>`;
+      extra = `<div class="glance" data-roster="both" data-date="${iso}">${inn} in · ${outn} out</div>`;
     }
     const mine = getAvail(state.currentBandId, state.currentUserId, iso);
     const fill = !out
@@ -543,7 +543,7 @@ if ($("saveProfileBtn")) $("saveProfileBtn").onclick = async () => {
   try {
     await api("/api/me", { method: "PUT", body: {
       firstName: $("profFirst").value, lastName: $("profLast").value,
-      phone: $("profPhone").value, email: $("profEmail").value, birthday: ($("profBdayISO") && $("profBdayISO").value) || parseMDY($("profBday").value)
+      phone: $("profPhone").value, email: $("profEmail").value, birthday: parseMDY($("profBday").value) || ($("profBdayISO") && $("profBdayISO").value) || ""
     }});
     localStorage.setItem("mbg.email", $("profEmail").value.trim());
     await loadState();
