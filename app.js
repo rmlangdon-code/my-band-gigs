@@ -554,7 +554,7 @@ async function openProfile() {
   $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
   $("profPhone").value = me.phone || "";
   $("profEmail").value = me.email || "";
-  fillBdaySelects(me.birthday ? String(me.birthday).slice(0, 10) : "");
+  if ($("profBday")) $("profBday").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
   $("profCurPass").value = "";
   $("profNewPass").value = "";
   $("profileModal").classList.add("open");
@@ -566,7 +566,7 @@ if ($("saveProfileBtn")) $("saveProfileBtn").onclick = async () => {
   try {
     await api("/api/me", { method: "PUT", body: {
       firstName: $("profFirst").value, lastName: $("profLast").value,
-      phone: $("profPhone").value, email: $("profEmail").value, birthday: bdayFromSelects()
+      phone: $("profPhone").value, email: $("profEmail").value, birthday: $("profBday").value || ""
     }});
     localStorage.setItem("mbg.email", $("profEmail").value.trim());
     await loadState();
