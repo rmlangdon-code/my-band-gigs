@@ -191,3 +191,6 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
   padding:0 !important;
   margin:0 !important;
 }
+
+.avail-mark{cursor:pointer}
+.glance .avail-mark{text-decoration:underline;text-underline-offset:2px}

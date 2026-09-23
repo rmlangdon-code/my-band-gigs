@@ -45,6 +45,12 @@ function isAdmin() {
   return state.memberships.some(m => m.userId === state.currentUserId && ids.includes(m.bandId) && m.role === "admin");
 }
 function firstName(user) { return (user?.firstName || user?.name || "?").split(" ")[0]; }
+function displayName(user) {
+  const f = (user?.firstName || "").trim();
+  const l = (user?.lastName || "").trim();
+  if (f || l) return `${f} ${l}`.trim();
+  return (user?.name || "?").trim();
+}
 function bandShort(bandId) { return state.bands.find(b => b.id === bandId)?.short || ""; }
 function eventLabel(e) {
   const abbr = bandShort(e.bandId);
@@ -216,7 +222,7 @@ function renderCalendar() {
         if (status === "AVAILABLE") inn++;
         if (status === "UNAVAILABLE") outn++;
       });
-      extra = (inn || outn) ? `<div class="glance"><span class="avail-mark AVAILABLE">${inn} in</span> · <span class="avail-mark UNAVAILABLE">${outn} out</span></div>` : "";
+      extra = `<div class="glance"><span class="avail-mark AVAILABLE" data-roster="in" data-date="${iso}">${inn} in</span> · <span class="avail-mark UNAVAILABLE" data-roster="out" data-date="${iso}">${outn} out</span></div>`;
     }
     const mine = getAvail(state.currentBandId, state.currentUserId, iso);
     const fill = !out
@@ -261,7 +267,9 @@ function renderMembers() {
     const bday = m.user.birthday ? formatMDY(String(m.user.birthday).slice(0,10)) : "";
     const phone = m.user.phone || "";
     const email = m.user.email || "";
-    const bits = [full + you, bday && ("Birthday " + bday), phone, email].filter(Boolean);
+    const first = (m.user.firstName || (m.user.name || "").split(" ")[0] || "").trim();
+    const last = (m.user.lastName || (m.user.name || "").split(" ").slice(1).join(" ") || "").trim();
+    const bits = [first + you, last, phone, email, bday].filter(Boolean);
     const btns = admin && m.user.id !== state.currentUserId
       ? `<div style="margin:4px 0 8px;display:flex;gap:6px">
            <button class="btn" data-edit-member="${m.user.id}">Edit</button>
@@ -349,8 +357,8 @@ function openEventModal(dateISO, eventId, asCopy) {
     const ins = [], outs = [];
     roster.forEach(mem => {
       const st = getAvail(bandForAvail, mem.user.id, availDate);
-      if (st === "AVAILABLE") ins.push(firstName(mem.user));
-      if (st === "UNAVAILABLE") outs.push(firstName(mem.user));
+      if (st === "AVAILABLE") ins.push(displayName(mem.user));
+      if (st === "UNAVAILABLE") outs.push(displayName(mem.user));
     });
     $("evLineup").innerHTML = (admin || ins.length || outs.length)
       ? `<div><strong>In:</strong> ${ins.join(", ") || "—"}</div><div><strong>Out:</strong> ${outs.join(", ") || "—"}</div>`
@@ -439,6 +447,8 @@ document.addEventListener("click", async (e) => {
   }
   const calDay = e.target.closest("#days .day");
   if (calDay && !calDay.classList.contains("out")) {
+    const rosterTap = e.target.closest("[data-roster]");
+    if (rosterTap) { openRoster(rosterTap.dataset.date, rosterTap.dataset.roster); return; }
     const chip = e.target.closest(".chip");
     if (chip && chip.dataset.eid) { openEventModal(null, chip.dataset.eid); return; }
     if (calDay.dataset.firstEvent) { openEventModal(null, calDay.dataset.firstEvent); return; }
@@ -539,6 +549,20 @@ if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
 
 $("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"); document.body.classList.remove("is-admin"); renderAuth(); };
+function openRoster(iso, which) {
+  const title = which === "out" ? "Out" : "In";
+  $("rosterTitle").textContent = `${title} — ${formatMDY(iso)}`;
+  const want = which === "out" ? "UNAVAILABLE" : "AVAILABLE";
+  const names = bandMembers(state.currentBandId)
+    .filter(mem => getAvail(state.currentBandId, mem.user.id, iso) === want)
+    .map(mem => displayName(mem.user));
+  $("rosterList").innerHTML = names.length
+    ? names.map(n => `<div class="event" style="cursor:default"><div class="meta">${n}</div></div>`).join("")
+    : `<div class="hint">Nobody marked ${title.toLowerCase()}.</div>`;
+  $("rosterModal").classList.add("open");
+}
+if ($("closeRosterBtn")) $("closeRosterBtn").onclick = () => $("rosterModal").classList.remove("open");
+if ($("rosterModal")) $("rosterModal").addEventListener("click", e => { if (e.target.id === "rosterModal") $("rosterModal").classList.remove("open"); });
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
