@@ -89,6 +89,28 @@ function parseMDY(s) {
   if (!m) return "";
   return `${m[3]}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
 }
+function fillBdaySelects(iso) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const yNow = new Date().getFullYear();
+  let y = yNow - 30, m = 1, d = 1;
+  const norm = String(iso || "").slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(norm)) {
+    y = +norm.slice(0,4); m = +norm.slice(5,7); d = +norm.slice(8,10);
+  }
+  $("profBdayM").innerHTML = months.map((n,i) => `<option value="${String(i+1).padStart(2,"0")}">${n}</option>`).join("");
+  $("profBdayD").innerHTML = Array.from({length:31}, (_,i) => `<option value="${String(i+1).padStart(2,"0")}">${i+1}</option>`).join("");
+  $("profBdayY").innerHTML = Array.from({length:90}, (_,i) => {
+    const yy = yNow - 12 - i;
+    return `<option value="${yy}">${yy}</option>`;
+  }).join("");
+  $("profBdayM").value = String(m).padStart(2,"0");
+  $("profBdayD").value = String(d).padStart(2,"0");
+  $("profBdayY").value = String(y);
+}
+function bdayFromSelects() {
+  if (!$("profBdayY") || !$("profBdayY").value) return "";
+  return `${$("profBdayY").value}-${$("profBdayM").value}-${$("profBdayD").value}`;
+}
 function formatMDY(iso) {
   if (!iso) return "";
   const [y,m,d] = String(iso).slice(0,10).split("-");
@@ -532,8 +554,7 @@ async function openProfile() {
   $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
   $("profPhone").value = me.phone || "";
   $("profEmail").value = me.email || "";
-  $("profBday").value = me.birthday ? formatMDY(String(me.birthday).slice(0, 10)) : "";
-  if ($("profBdayISO")) $("profBdayISO").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
+  fillBdaySelects(me.birthday ? String(me.birthday).slice(0, 10) : "");
   $("profCurPass").value = "";
   $("profNewPass").value = "";
   $("profileModal").classList.add("open");
@@ -545,7 +566,7 @@ if ($("saveProfileBtn")) $("saveProfileBtn").onclick = async () => {
   try {
     await api("/api/me", { method: "PUT", body: {
       firstName: $("profFirst").value, lastName: $("profLast").value,
-      phone: $("profPhone").value, email: $("profEmail").value, birthday: parseMDY($("profBday").value) || ($("profBdayISO") && $("profBdayISO").value) || ""
+      phone: $("profPhone").value, email: $("profEmail").value, birthday: bdayFromSelects()
     }});
     localStorage.setItem("mbg.email", $("profEmail").value.trim());
     await loadState();
@@ -566,15 +587,6 @@ async function copyCal(kind) {
     await navigator.clipboard.writeText(url);
     toast("Link copied. Paste it in Google Calendar → From URL");
   } catch (err) { toast(err.message); }
-}
-if ($("profBdayISO")) {
-  const syncBday = () => { if ($("profBdayISO").value) $("profBday").value = formatMDY($("profBdayISO").value); };
-  $("profBdayISO").addEventListener("input", syncBday);
-  $("profBdayISO").addEventListener("change", syncBday);
-  $("profBday").addEventListener("change", () => {
-    const iso = parseMDY($("profBday").value);
-    if (iso) $("profBdayISO").value = iso;
-  });
 }
 if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");

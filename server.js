@@ -44,11 +44,28 @@ function parseBirthday(v) {
   return null;
 }
 
+function toISODateVal(v) {
+  if (!v) return "";
+  if (v instanceof Date && !isNaN(v)) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, "0");
+    const d = String(v.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(v).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return `${mdy[3]}-${String(mdy[1]).padStart(2,"0")}-${String(mdy[2]).padStart(2,"0")}`;
+  const parsed = new Date(s);
+  if (!isNaN(parsed)) return toISODateVal(parsed);
+  return "";
+}
 function fmtDateMDY(iso) {
-  if (!iso) return "(none)";
-  const d = String(iso).slice(0, 10);
+  const d = toISODateVal(iso);
+  if (!d) return "(none)";
   const [y,m,da] = d.split("-");
-  return m && da && y ? `${m}/${da}/${y}` : d;
+  return `${m}/${da}/${y}`;
 }
 function fmtTime12(t) {
   if (!t) return "";
@@ -61,9 +78,9 @@ function fmtTime12(t) {
 }
 function eventChangeLines(oldRow, next) {
   const lines = [];
-  const oldDate = String(oldRow.date || "").slice(0, 10);
-  const newDate = String(next.date || "").slice(0, 10);
-  if (newDate && newDate !== oldDate) lines.push(`Alert: Date changed from ${fmtDateMDY(oldDate)} to ${fmtDateMDY(newDate)}`);
+  const oldDate = toISODateVal(oldRow.date);
+  const newDate = toISODateVal(next.date);
+  if (oldDate && newDate && newDate !== oldDate) lines.push(`Alert: Date changed from ${fmtDateMDY(oldDate)} to ${fmtDateMDY(newDate)}`);
   const oldT = `${fmtTime12(oldRow.start_time)} – ${fmtTime12(oldRow.end_time)}`.trim();
   const newT = `${fmtTime12(next.start)} – ${fmtTime12(next.end)}`.trim();
   if ((next.start || next.end) && newT !== oldT) lines.push(`Alert: Time changed from ${oldT} to ${newT}`);
@@ -359,10 +376,9 @@ app.put("/api/events/:id", auth, async (req, res) => {
         [id(), bid, req.params.id, msg]);
     }
     res.json({ ok: true });
-    const band = (await pool.query("SELECT short FROM bands WHERE id=$1", [bid])).rows[0];
-    const t = next.title;
-    const pushBody = lines.length ? lines.join(" · ") : (((band && band.short) ? band.short + " - " : "") + t);
-    notifyBand(bid, { title: "Event updated", body: pushBody, eventId: req.params.id, date: next.date });
+    if (lines.length) {
+      notifyBand(bid, { title: "Event updated", body: lines.join(" · "), eventId: req.params.id, date: next.date });
+    }
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not update event" }); }
 });
 
