@@ -400,8 +400,9 @@ function openEventModal(dateISO, eventId, asCopy) {
 async function saveEvent() {
   const payload = {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
-    date: ($("evDateISO") && $("evDateISO").value) || parseMDY($("evDate").value) || $("evDate").value, start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
-    venue: $("evVenue").value.trim(), notes: $("evNotes").value.trim()
+    date: parseMDY($("evDate").value) || ($("evDateISO") && $("evDateISO").value) || $("evDate").value,
+    start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
+    venue: $("evVenue").value.trim(), notes: ""
   };
   try {
     if (editingEventId && !duplicating) await api("/api/events/" + editingEventId, { method: "PUT", body: payload });
