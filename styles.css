@@ -170,3 +170,12 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 .date-wrap #evDate{width:100%;max-width:100%;box-sizing:border-box;text-align:left;padding-right:42px}
 .date-wrap #evDateISO{position:absolute;opacity:0;pointer-events:none;width:0;height:0;border:0}
 .date-cal-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;padding:4px;line-height:0;pointer-events:auto}
+
+#eventModal input,#eventModal select,#eventModal textarea,
+#eventModal input:disabled,#eventModal select:disabled,#eventModal textarea:disabled,
+#eventModal input:read-only{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  opacity:1 !important;
+}
+#eventModal option{color:#fff;background:#101217}
