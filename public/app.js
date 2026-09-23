@@ -627,6 +627,24 @@ if ($("rosterModal")) $("rosterModal").addEventListener("click", e => { if (e.ta
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
+
+function bindDateWrap(wrapId, inputId) {
+  const wrap = $(wrapId);
+  const input = $(inputId);
+  if (!wrap || !input || wrap.dataset.bound) return;
+  wrap.dataset.bound = "1";
+  wrap.addEventListener("click", (e) => {
+    if (wrap.style.pointerEvents === "none") return;
+    e.preventDefault();
+    try { input.showPicker(); } catch (err) { input.focus(); input.click(); }
+  });
+}
+bindDateWrap("evDateWrap", "evDate");
+if ($("profBday") && $("profBday").closest) {
+  const w = $("profBday").closest(".bday-wrap");
+  if (w && !w.id) w.id = "profBdayWrap";
+  bindDateWrap("profBdayWrap", "profBday");
+}
 if ($("evDate")) {
   $("evDate").addEventListener("input", syncEvDateLabel);
   $("evDate").addEventListener("change", syncEvDateLabel);

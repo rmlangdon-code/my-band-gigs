@@ -354,3 +354,21 @@ body:not(.is-admin) #evVenue{
   color:transparent !important;
   -webkit-text-fill-color:transparent !important;
 }
+
+.bday-wrap #profBday,
+.bday-wrap #evDate{
+  opacity:0 !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+  caret-color:transparent;
+}
+.bday-wrap #profBday::-webkit-calendar-picker-indicator,
+.bday-wrap #evDate::-webkit-calendar-picker-indicator{
+  display:none !important;
+  opacity:0 !important;
+}
+.bday-wrap #profBday::-webkit-datetime-edit,
+.bday-wrap #evDate::-webkit-datetime-edit{
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+}
