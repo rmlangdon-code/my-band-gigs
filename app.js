@@ -83,6 +83,18 @@ function getAvail(bandId, userId, iso) {
   }
   return state.availability[`${bandId}:${userId}:${iso}`] || "";
 }
+function dateToISO(v) {
+  if (!v) return "";
+  if (v instanceof Date && !isNaN(v)) return toISODate(v.getFullYear(), v.getMonth(), v.getDate());
+  const s = String(v).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return iso[1] + "-" + iso[2] + "-" + iso[3];
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return mdy[3] + "-" + String(mdy[1]).padStart(2,"0") + "-" + String(mdy[2]).padStart(2,"0");
+  const p = new Date(s);
+  if (!isNaN(p)) return toISODate(p.getUTCFullYear(), p.getUTCMonth(), p.getUTCDate());
+  return "";
+}
 function toISODate(y, m, d) { return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
 function parseMDY(s) {
   const m = String(s||"").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -560,7 +572,10 @@ async function openProfile() {
   $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
   $("profPhone").value = me.phone || "";
   $("profEmail").value = me.email || "";
-  if ($("profBday")) $("profBday").value = me.birthday ? formatMDY(String(me.birthday).slice(0, 10)) : "";
+  if ($("profBday")) {
+    const iso = dateToISO(me.birthday);
+    $("profBday").value = iso ? formatMDY(iso) : "";
+  }
   $("profCurPass").value = "";
   $("profNewPass").value = "";
   $("profileModal").classList.add("open");
