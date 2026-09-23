@@ -99,9 +99,10 @@
       </div>
       <div class="form-row"><label>Date</label>
         <div class="bday-wrap" id="evDateWrap">
-          <span id="evDateLabel" class="bday-label"></span>
-          <svg class="bday-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <input id="evDate" type="date" />
+          <input id="evDate" type="text" inputmode="numeric" placeholder="mm/dd/yyyy" autocomplete="off" />
+          <button type="button" class="bday-icon-btn" data-cal-for="evDate" aria-label="Open calendar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
         </div>
       </div>
       <div class="form-row times-row">
@@ -160,9 +161,10 @@
       <div class="form-row"><label>Email (login)</label><input id="profEmail" type="email" /></div>
       <div class="form-row"><label>Birthday</label>
         <div class="bday-wrap" id="profBdayWrap">
-          <span id="profBdayLabel" class="bday-label"></span>
-          <svg class="bday-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-          <input id="profBday" type="date" />
+          <input id="profBday" type="text" inputmode="numeric" placeholder="mm/dd/yyyy" autocomplete="off" />
+          <button type="button" class="bday-icon-btn" data-cal-for="profBday" aria-label="Open calendar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
         </div>
       </div>
       <button class="btn btn-primary" id="saveProfileBtn">Save profile</button>
@@ -186,6 +188,16 @@
       <div id="rosterList" class="event-list"></div>
       <div style="margin-top:16px"><button class="btn" id="closeRosterBtn">Close</button></div>
     </div>
+  </div>
+  
+  <div id="miniCal" class="mini-cal" hidden>
+    <div class="mini-cal-head">
+      <button type="button" id="miniPrev">‹</button>
+      <strong id="miniTitle"></strong>
+      <button type="button" id="miniNext">›</button>
+    </div>
+    <div class="mini-cal-dows">S M T W T F S</div>
+    <div id="miniDays" class="mini-cal-days"></div>
   </div>
   <div class="toast-wrap" id="toasts"></div>
   <script src="/app.js"></script>

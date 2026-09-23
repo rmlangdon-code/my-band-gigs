@@ -396,10 +396,9 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evTitle").value = ev?.title || "";
   $("evType").value = ev?.type || "gig";
   const isoDate = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
-  $("evDate").type = "date";
-  $("evDate").value = isoDate;
-  syncEvDateLabel();
+  $("evDate").value = formatMDY(isoDate);
   if ($("evDateWrap")) $("evDateWrap").style.pointerEvents = admin ? "auto" : "none";
+  $("evDate").readOnly = !admin;
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
@@ -429,7 +428,7 @@ function openEventModal(dateISO, eventId, asCopy) {
 async function saveEvent() {
   const payload = {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
-    date: $("evDate").value || parseMDY(($("evDateLabel") && $("evDateLabel").textContent) || "") || $("evDate").value,
+    date: parseMDY($("evDate").value) || $("evDate").value,
     start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
     venue: $("evVenue").value.trim(), notes: ""
   };
@@ -561,10 +560,7 @@ async function openProfile() {
   $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
   $("profPhone").value = me.phone || "";
   $("profEmail").value = me.email || "";
-  if ($("profBday")) {
-    $("profBday").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
-    syncBdayLabel();
-  }
+  if ($("profBday")) $("profBday").value = me.birthday ? formatMDY(String(me.birthday).slice(0, 10)) : "";
   $("profCurPass").value = "";
   $("profNewPass").value = "";
   $("profileModal").classList.add("open");
@@ -576,7 +572,7 @@ if ($("saveProfileBtn")) $("saveProfileBtn").onclick = async () => {
   try {
     await api("/api/me", { method: "PUT", body: {
       firstName: $("profFirst").value, lastName: $("profLast").value,
-      phone: $("profPhone").value, email: $("profEmail").value, birthday: $("profBday").value || ""
+      phone: $("profPhone").value, email: $("profEmail").value, birthday: parseMDY($("profBday").value) || ""
     }});
     localStorage.setItem("mbg.email", $("profEmail").value.trim());
     await loadState();
@@ -631,6 +627,55 @@ function openRoster(iso) {
 }
 if ($("closeRosterBtn")) $("closeRosterBtn").onclick = () => $("rosterModal").classList.remove("open");
 if ($("rosterModal")) $("rosterModal").addEventListener("click", e => { if (e.target.id === "rosterModal") $("rosterModal").classList.remove("open"); });
+
+let miniTarget = null, miniY = 2026, miniM = 0;
+function placeMini(anchor) {
+  const box = $("miniCal");
+  const r = anchor.getBoundingClientRect();
+  box.style.top = Math.min(window.innerHeight - 280, r.bottom + 6) + "px";
+  box.style.left = Math.max(8, Math.min(window.innerWidth - 268, r.left)) + "px";
+}
+function drawMini() {
+  const first = new Date(miniY, miniM, 1);
+  $("miniTitle").textContent = first.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const start = first.getDay();
+  const n = new Date(miniY, miniM + 1, 0).getDate();
+  let html = "";
+  for (let i = 0; i < start; i++) html += "<span></span>";
+  for (let d = 1; d <= n; d++) html += `<button type="button" data-mini-d="${d}">${d}</button>`;
+  $("miniDays").innerHTML = html;
+}
+function openMini(inputId, wrap) {
+  miniTarget = inputId;
+  const iso = parseMDY($(inputId).value) || toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  miniY = +iso.slice(0,4); miniM = +iso.slice(5,7) - 1;
+  drawMini();
+  $("miniCal").hidden = false;
+  placeMini(wrap || $(inputId));
+}
+function closeMini() { $("miniCal").hidden = true; miniTarget = null; }
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-cal-for]");
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    const wrap = btn.closest(".bday-wrap");
+    if (wrap && wrap.style.pointerEvents === "none") return;
+    openMini(btn.dataset.calFor, wrap);
+    return;
+  }
+  if (e.target.closest("#miniCal")) return;
+  if (!$("miniCal").hidden) closeMini();
+});
+if ($("miniPrev")) $("miniPrev").onclick = (e) => { e.stopPropagation(); miniM--; if (miniM < 0) { miniM = 11; miniY--; } drawMini(); };
+if ($("miniNext")) $("miniNext").onclick = (e) => { e.stopPropagation(); miniM++; if (miniM > 11) { miniM = 0; miniY++; } drawMini(); };
+if ($("miniDays")) $("miniDays").onclick = (e) => {
+  const d = e.target.dataset.miniD;
+  if (!d || !miniTarget) return;
+  $(miniTarget).value = formatMDY(toISODate(miniY, miniM, +d));
+  closeMini();
+};
+
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));

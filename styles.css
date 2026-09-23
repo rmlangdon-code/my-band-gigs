@@ -372,3 +372,24 @@ body:not(.is-admin) #evVenue{
   color:transparent !important;
   -webkit-text-fill-color:transparent !important;
 }
+
+.bday-wrap{position:relative;width:100%;max-width:100%;box-sizing:border-box}
+.bday-wrap input[type="text"]{
+  width:100%;box-sizing:border-box;padding-right:44px;text-align:left;color:#fff
+}
+.bday-icon-btn{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  background:transparent;border:0;padding:6px;line-height:0;cursor:pointer;z-index:2
+}
+.mini-cal{
+  position:fixed;z-index:80;width:252px;background:#101217;border:1px solid var(--line);
+  border-radius:12px;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,.45)
+}
+.mini-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.mini-cal-head button{background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer;width:32px}
+.mini-cal-dows{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:var(--muted);font-size:11px;margin-bottom:4px}
+.mini-cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.mini-cal-days button{
+  background:transparent;border:0;color:#fff;height:30px;border-radius:6px;cursor:pointer
+}
+.mini-cal-days button:hover{background:#2a2f3a}
