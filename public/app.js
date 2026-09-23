@@ -248,7 +248,7 @@ function renderCalendar() {
         if (status === "AVAILABLE") inn++;
         if (status === "UNAVAILABLE") outn++;
       });
-      extra = `<div class="glance" data-roster="both" data-date="${iso}">${inn} in · ${outn} out</div>`;
+      extra = `<div class="glance" data-roster="both" data-date="${iso}">${inn} in · ${outn} Out</div>`;
     }
     const mine = getAvail(state.currentBandId, state.currentUserId, iso);
     const fill = !out

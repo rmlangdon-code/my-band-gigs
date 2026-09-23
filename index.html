@@ -35,7 +35,6 @@
       <div class="top-actions">
         <span class="pill" id="who"></span>
         <button class="btn btn-ghost" id="profileBtn">Profile</button>
-        <button class="btn btn-ghost" id="logoutBtn">Log out</button>
       </div>
     </header>
     <div class="home">
@@ -177,7 +176,10 @@
       <p class="hint">Copy a link, then in Google Calendar: Other calendars → From URL.</p>
       <button class="btn" id="copyCalAll" style="width:100%;margin-top:8px">Copy All gigs link</button>
       <button class="btn" id="copyCalMine" style="width:100%;margin-top:8px">Copy My gigs link</button>
-      <div style="margin-top:16px"><button class="btn" id="closeProfileBtn">Close</button></div>
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="closeProfileBtn">Close</button>
+        <button class="btn btn-ghost" id="logoutBtn">Log Out</button>
+      </div>
     </div>
   </div>
   <div id="rosterModal" class="overlay">
