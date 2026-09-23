@@ -647,6 +647,13 @@ app.put("/api/me/password", auth, async (req, res) => {
 
 
 
+
+async function noteAlert(eventId, bandId, msg, date) {
+  await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
+    [id(), bandId, eventId, msg]);
+  notifyBand(bandId, { title: "Event updated", body: msg, eventId, date });
+}
+
 app.get("/api/events/:id/notes", auth, async (req, res) => {
   try {
     const rows = (await pool.query(
@@ -659,7 +666,7 @@ app.get("/api/events/:id/notes", auth, async (req, res) => {
 });
 app.post("/api/events/:id/notes", auth, async (req, res) => {
   try {
-    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    const ev = (await pool.query("SELECT band_id, date FROM events WHERE id=$1", [req.params.id])).rows[0];
     if (!ev) return res.status(404).json({ error: "Event not found" });
     if (!(await memberOf(req.user.id, ev.band_id))) return res.status(403).json({ error: "Not in that band" });
     const message = (req.body.message || "").trim();
@@ -667,6 +674,9 @@ app.post("/api/events/:id/notes", auth, async (req, res) => {
     const note = { id: id(), eventId: req.params.id, userId: req.user.id, message };
     await pool.query("INSERT INTO event_notes (id, event_id, user_id, message) VALUES ($1,$2,$3,$4)",
       [note.id, note.eventId, note.userId, note.message]);
+    const who = req.user.name || "A member";
+    const preview = message.length > 80 ? message.slice(0, 77) + "..." : message;
+    await noteAlert(req.params.id, ev.band_id, `Alert: Note added by ${who}: ${preview}`, ev.date);
     res.json(note);
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not add note" }); }
 });
@@ -674,12 +684,15 @@ app.put("/api/events/:id/notes/:noteId", auth, async (req, res) => {
   try {
     const found = (await pool.query("SELECT * FROM event_notes WHERE id=$1 AND event_id=$2", [req.params.noteId, req.params.id])).rows[0];
     if (!found) return res.status(404).json({ error: "Note not found" });
-    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    const ev = (await pool.query("SELECT band_id, date FROM events WHERE id=$1", [req.params.id])).rows[0];
     const admin = ev && await isAdminOf(req.user.id, ev.band_id);
     if (found.user_id !== req.user.id && !admin) return res.status(403).json({ error: "You can only edit your own notes" });
     const message = (req.body.message || "").trim();
     if (!message) return res.status(400).json({ error: "Note is empty" });
     await pool.query("UPDATE event_notes SET message=$1 WHERE id=$2", [message, found.id]);
+    const who = req.user.name || "A member";
+    const oldM = (found.message || "").trim();
+    await noteAlert(req.params.id, ev.band_id, `Alert: Note changed by ${who} from ${oldM || "(empty)"} to ${message}`, ev.date);
     res.json({ ok: true });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not edit note" }); }
 });
@@ -687,10 +700,13 @@ app.delete("/api/events/:id/notes/:noteId", auth, async (req, res) => {
   try {
     const found = (await pool.query("SELECT * FROM event_notes WHERE id=$1 AND event_id=$2", [req.params.noteId, req.params.id])).rows[0];
     if (!found) return res.status(404).json({ error: "Note not found" });
-    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    const ev = (await pool.query("SELECT band_id, date FROM events WHERE id=$1", [req.params.id])).rows[0];
     const admin = ev && await isAdminOf(req.user.id, ev.band_id);
     if (found.user_id !== req.user.id && !admin) return res.status(403).json({ error: "You can only delete your own notes" });
     await pool.query("DELETE FROM event_notes WHERE id=$1", [found.id]);
+    const who = req.user.name || "A member";
+    const preview = (found.message || "").trim();
+    await noteAlert(req.params.id, ev.band_id, `Alert: Note deleted by ${who}: ${preview}`, ev.date);
     res.json({ ok: true });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete note" }); }
 });
