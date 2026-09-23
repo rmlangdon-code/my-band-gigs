@@ -253,16 +253,21 @@ function renderUpcoming() {
     </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
 }
 function renderMembers() {
-  if (!isAdmin()) { $("members").innerHTML = ""; return; }
+  if (!$("members")) return;
+  const admin = isAdmin();
   $("members").innerHTML = bandMembers(state.currentBandId).map(m => {
     const you = m.user.id === state.currentUserId ? " (you)" : "";
     const full = [m.user.firstName || m.user.name, m.user.lastName].filter(Boolean).join(" ");
-    const btns = m.user.id !== state.currentUserId
+    const bday = m.user.birthday ? formatMDY(String(m.user.birthday).slice(0,10)) : "";
+    const phone = m.user.phone || "";
+    const email = m.user.email || "";
+    const bits = [full + you, bday && ("Birthday " + bday), phone, email].filter(Boolean);
+    const btns = admin && m.user.id !== state.currentUserId
       ? `<div style="margin:4px 0 8px;display:flex;gap:6px">
            <button class="btn" data-edit-member="${m.user.id}">Edit</button>
            <button class="btn btn-danger" data-del-member="${m.user.id}">Remove</button>
          </div>` : "";
-    return `<div class="meta">${full} · ${m.role}${you}</div>${btns}`;
+    return `<div class="event" style="cursor:default"><div class="meta">${bits.join(" · ")}</div>${btns}</div>`;
   }).join("") || `<div class="meta">No members yet.</div>`;
   const adminBands = state.bands.filter(b =>
     state.memberships.some(m => m.userId === state.currentUserId && m.bandId === b.id && m.role === "admin")
