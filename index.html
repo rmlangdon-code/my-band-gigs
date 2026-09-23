@@ -157,7 +157,15 @@
       <div class="form-row"><label>Last name</label><input id="profLast" /></div>
       <div class="form-row"><label>Phone</label><input id="profPhone" type="tel" /></div>
       <div class="form-row"><label>Email (login)</label><input id="profEmail" type="email" /></div>
-      <div class="form-row"><label>Birthday</label><input id="profBday" type="date" /></div>
+      <div class="form-row"><label>Birthday</label>
+        <div class="date-wrap">
+          <input id="profBday" type="text" placeholder="mm/dd/yyyy" />
+          <input id="profBdayISO" type="date" />
+          <button type="button" class="date-cal-btn" id="profBdayBtn" aria-label="Open calendar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </button>
+        </div>
+      </div>
       <button class="btn btn-primary" id="saveProfileBtn">Save profile</button>
       <h2 style="margin-top:22px">Password</h2>
       <div class="form-row"><label>Current password</label><input id="profCurPass" type="password" /></div>
