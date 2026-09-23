@@ -130,6 +130,13 @@ async function initDb() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS cal_token TEXT;
+    CREATE TABLE IF NOT EXISTS event_notes (
+      id TEXT PRIMARY KEY,
+      event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      message TEXT NOT NULL,
+      at TIMESTAMPTZ DEFAULT NOW()
+    );
     
 
     CREATE TABLE IF NOT EXISTS push_subs (
@@ -612,6 +619,55 @@ app.put("/api/me/password", auth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not change password" }); }
 });
 
+
+
+app.get("/api/events/:id/notes", auth, async (req, res) => {
+  try {
+    const rows = (await pool.query(
+      `SELECT n.id, n.user_id AS "userId", n.message, n.at, u.name, u.first_name AS "firstName", u.last_name AS "lastName"
+       FROM event_notes n JOIN users u ON u.id=n.user_id
+       WHERE n.event_id=$1 ORDER BY n.at DESC`, [req.params.id]
+    )).rows;
+    res.json(rows);
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not load notes" }); }
+});
+app.post("/api/events/:id/notes", auth, async (req, res) => {
+  try {
+    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    if (!ev) return res.status(404).json({ error: "Event not found" });
+    if (!(await memberOf(req.user.id, ev.band_id))) return res.status(403).json({ error: "Not in that band" });
+    const message = (req.body.message || "").trim();
+    if (!message) return res.status(400).json({ error: "Note is empty" });
+    const note = { id: id(), eventId: req.params.id, userId: req.user.id, message };
+    await pool.query("INSERT INTO event_notes (id, event_id, user_id, message) VALUES ($1,$2,$3,$4)",
+      [note.id, note.eventId, note.userId, note.message]);
+    res.json(note);
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not add note" }); }
+});
+app.put("/api/events/:id/notes/:noteId", auth, async (req, res) => {
+  try {
+    const found = (await pool.query("SELECT * FROM event_notes WHERE id=$1 AND event_id=$2", [req.params.noteId, req.params.id])).rows[0];
+    if (!found) return res.status(404).json({ error: "Note not found" });
+    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    const admin = ev && await isAdminOf(req.user.id, ev.band_id);
+    if (found.user_id !== req.user.id && !admin) return res.status(403).json({ error: "You can only edit your own notes" });
+    const message = (req.body.message || "").trim();
+    if (!message) return res.status(400).json({ error: "Note is empty" });
+    await pool.query("UPDATE event_notes SET message=$1 WHERE id=$2", [message, found.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not edit note" }); }
+});
+app.delete("/api/events/:id/notes/:noteId", auth, async (req, res) => {
+  try {
+    const found = (await pool.query("SELECT * FROM event_notes WHERE id=$1 AND event_id=$2", [req.params.noteId, req.params.id])).rows[0];
+    if (!found) return res.status(404).json({ error: "Note not found" });
+    const ev = (await pool.query("SELECT band_id FROM events WHERE id=$1", [req.params.id])).rows[0];
+    const admin = ev && await isAdminOf(req.user.id, ev.band_id);
+    if (found.user_id !== req.user.id && !admin) return res.status(403).json({ error: "You can only delete your own notes" });
+    await pool.query("DELETE FROM event_notes WHERE id=$1", [found.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete note" }); }
+});
 
 app.get("/api/push/key", auth, (req, res) => res.json({ key: VAPID_PUBLIC }));
 app.post("/api/push/subscribe", auth, async (req, res) => {

@@ -320,6 +320,31 @@ async function loadEventAlerts(eventId) {
   } catch { box.style.display = "none"; }
 }
 
+let notesEventId = null;
+function noteAuthor(n) {
+  return displayName({ firstName: n.firstName, lastName: n.lastName, name: n.name });
+}
+async function loadEventNotes(eventId) {
+  notesEventId = eventId || null;
+  const box = $("evNotesList");
+  if (!box) return;
+  if (!eventId) { box.innerHTML = ""; return; }
+  try {
+    const rows = await api("/api/events/" + eventId + "/notes");
+    box.innerHTML = rows.length ? rows.map(n => {
+      const mine = n.userId === state.currentUserId;
+      const can = mine || isAdmin();
+      return `<div class="note-item" data-note="${n.id}">
+        <div class="meta"><strong>${noteAuthor(n)}</strong> writes:</div>
+        <div class="note-text">${(n.message || "").replace(/</g,"&lt;")}</div>
+        ${can ? `<div style="margin-top:4px;display:flex;gap:6px">
+          <button class="btn" data-note-edit="${n.id}">Edit</button>
+          <button class="btn btn-danger" data-note-del="${n.id}">Delete</button>
+        </div>` : ""}
+      </div>`;
+    }).join("") : `<div class="hint">No notes yet.</div>`;
+  } catch { box.innerHTML = ""; }
+}
 function openEventModal(dateISO, eventId, asCopy) {
   const admin = isAdmin();
   if (!admin && !eventId) return;
@@ -329,7 +354,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   duplicating = !!asCopy;
   const ev = state.events.find(e => e.id === eventId);
   $("modalTitle").textContent = !admin ? "Event details" : (asCopy ? "Duplicate event" : (ev ? "Edit event" : "Add gig or rehearsal"));
-  ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue","evNotes"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
+  ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
   $("saveEvent").style.display = admin ? "" : "none";
   if ($("deleteEventBtn")) $("deleteEventBtn").style.display = admin && editingEventId ? "" : "none";
   if ($("dupEventBtn")) $("dupEventBtn").style.display = admin && eventId && !asCopy ? "" : "none";
@@ -348,7 +373,6 @@ function openEventModal(dateISO, eventId, asCopy) {
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
-  $("evNotes").value = ev?.notes || "";
   const availDate = ev?.date || dateISO || $("evDate").value;
   const mine = getAvail(ev?.bandId || $("evBand").value || state.currentBandId, state.currentUserId, availDate);
   const bandForAvail = ev?.bandId || $("evBand").value || state.currentBandId;
@@ -370,6 +394,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evAvailOut").onclick = () => setDot(availDate, "UNAVAILABLE");
   $("eventModal").classList.add("open");
   loadEventAlerts(eventId && !asCopy ? eventId : null);
+  loadEventNotes(eventId && !asCopy ? eventId : null);
 }
 async function saveEvent() {
   const payload = {
@@ -585,6 +610,35 @@ if ($("evDateBtn") && $("evDateISO")) {
 }
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
+if ($("evNoteAdd")) $("evNoteAdd").onclick = async () => {
+  if (!notesEventId) { toast("Save the event first, then add notes."); return; }
+  const message = ($("evNoteInput").value || "").trim();
+  if (!message) return;
+  try {
+    await api("/api/events/" + notesEventId + "/notes", { method: "POST", body: { message } });
+    $("evNoteInput").value = "";
+    await loadEventNotes(notesEventId);
+  } catch (err) { toast(err.message); }
+};
+document.addEventListener("click", async (e) => {
+  if (e.target.dataset.noteEdit && notesEventId) {
+    const cur = e.target.closest(".note-item")?.querySelector(".note-text")?.textContent || "";
+    const next = prompt("Edit note", cur);
+    if (next === null) return;
+    try {
+      await api("/api/events/" + notesEventId + "/notes/" + e.target.dataset.noteEdit, { method: "PUT", body: { message: next } });
+      await loadEventNotes(notesEventId);
+    } catch (err) { toast(err.message); }
+  }
+  if (e.target.dataset.noteDel && notesEventId) {
+    if (!confirm("Delete this note?")) return;
+    try {
+      await api("/api/events/" + notesEventId + "/notes/" + e.target.dataset.noteDel, { method: "DELETE" });
+      await loadEventNotes(notesEventId);
+    } catch (err) { toast(err.message); }
+  }
+});
+
 $("dupEventBtn").onclick = () => {
   if (!editingEventId) return;
   openEventModal(null, editingEventId, true);

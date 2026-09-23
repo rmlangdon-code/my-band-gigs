@@ -112,7 +112,11 @@
         <div><label>End</label><select id="evEnd"></select></div>
       </div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
-      <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
+      <div class="form-row"><label>Notes</label>
+        <div id="evNotesList"></div>
+        <textarea id="evNoteInput" rows="2" placeholder="Add a note for the band"></textarea>
+        <button class="btn" id="evNoteAdd" style="margin-top:6px">Add note</button>
+      </div>
       <div id="evAlerts" class="alert-log" style="display:none"></div>
       <div id="evLineup" class="hint" style="margin:8px 0"></div>
       <div class="form-row" id="evAvailRow">

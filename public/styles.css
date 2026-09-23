@@ -194,3 +194,6 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 
 .avail-mark{cursor:pointer}
 .glance .avail-mark{text-decoration:underline;text-underline-offset:2px}
+
+.note-item{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;background:#101217}
+.note-text{margin-top:4px;color:#fff;white-space:pre-wrap}
