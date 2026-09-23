@@ -60,7 +60,7 @@
           <span><i class="dot out"></i>Unavailable</span>
           <button class="btn btn-primary admin-only" id="addEventBtn">Add event</button>
         </div>
-        <p class="hint" id="memberHint" style="display:none">Tap a date: once = available (green), twice = unavailable (red), again = clear.</p>
+        <p class="hint" id="memberHint" style="display:none">Empty date: tap to cycle available (green), unavailable (red), or clear. A day with a gig or rehearsal opens that event.</p>
         <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
         <div id="days" class="days"></div>
       </div>
@@ -91,7 +91,7 @@
     <div class="modal-card">
       <h2 id="modalTitle">Add gig or rehearsal</h2>
       <div class="form-row"><label>Band</label><select id="evBand"></select></div>
-      <div class="form-row"><label>Title (city / show name — abbreviation is added automatically)</label><input id="evTitle" placeholder="Oelwein IA" /></div>
+      <div class="form-row"><label>City, State</label><input id="evTitle" placeholder="Oelwein, IA" /></div>
       <div class="form-row"><label>Type</label>
         <select id="evType"><option value="gig">Gig</option><option value="rehearsal">Rehearsal</option></select>
       </div>
@@ -103,10 +103,13 @@
           </button>
         </div>
       </div>
-      <div class="form-row"><label>Start</label><select id="evStart"></select></div>
-      <div class="form-row"><label>End</label><select id="evEnd"></select></div>
+      <div class="form-row times-row">
+        <div><label>Start</label><select id="evStart"></select></div>
+        <div><label>End</label><select id="evEnd"></select></div>
+      </div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
       <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
+      <div id="evAlerts" class="alert-log" style="display:none"></div>
       <div id="evLineup" class="hint" style="margin:8px 0"></div>
       <div class="form-row" id="evAvailRow">
         <label>My status</label>

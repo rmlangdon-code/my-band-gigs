@@ -137,3 +137,15 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 
 .upcoming-filter.on{border-color:var(--accent);background:rgba(232,184,74,.12)}
 .day[data-cycle]{cursor:pointer}
+
+#eventModal .dots{gap:22px;margin-top:8px}
+#eventModal .pick{width:28px;height:28px;border-width:3px}
+
+.times-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.times-row label{display:block;margin-bottom:6px}
+.times-row select{width:100%}
+.date-wrap{width:100%}
+.date-wrap input[type="date"]{width:100%;text-align:left}
+.alert-log{background:#101217;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;font-size:13px}
+.alert-log h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.alert-log li{margin:4px 0;color:var(--text)}

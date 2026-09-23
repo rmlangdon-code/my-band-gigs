@@ -81,8 +81,16 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS activity (
       id TEXT PRIMARY KEY,
       band_id TEXT REFERENCES bands(id) ON DELETE CASCADE,
+      event_id TEXT,
       message TEXT NOT NULL,
       at TIMESTAMPTZ DEFAULT NOW()
+    );
+    ALTER TABLE activity ADD COLUMN IF NOT EXISTS event_id TEXT;
+    CREATE TABLE IF NOT EXISTS alert_views (
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      event_id TEXT NOT NULL,
+      viewed_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (user_id, event_id)
     );
     ALTER TABLE users ADD COLUMN IF NOT EXISTS setup_token TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT;
@@ -260,8 +268,8 @@ app.post("/api/events", auth, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes]
     );
-    await pool.query("INSERT INTO activity (id, band_id, message) VALUES ($1,$2,$3)",
-      [id(), bandId, `${req.user.name} added ${ev.type}: ${ev.title} (${ev.date})`]);
+    await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
+      [id(), bandId, ev.id, `${req.user.name} added this ${ev.type}`]);
     res.json(ev);
     const band = (await pool.query("SELECT short, name FROM bands WHERE id=$1", [bandId])).rows[0];
     const label = ((band && band.short) ? band.short + " - " : "") + ev.title;
@@ -281,6 +289,8 @@ app.put("/api/events/:id", auth, async (req, res) => {
       [type || old.type, title || old.title, date || old.date, start || old.start_time, end || old.end_time,
        venue ?? old.venue, notes ?? old.notes, bandId || old.band_id, req.params.id]
     );
+    await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
+      [id(), bandId || old.band_id, req.params.id, `${req.user.name} updated this event`]);
     res.json({ ok: true });
     const bid = bandId || old.band_id;
     const band = (await pool.query("SELECT short FROM bands WHERE id=$1", [bid])).rows[0];
@@ -425,6 +435,35 @@ app.post("/api/setup", async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not finish setup" }); }
 });
 
+
+
+app.get("/api/events/:id/alerts", auth, async (req, res) => {
+  try {
+    const evId = req.params.id;
+    const viewed = await pool.query("SELECT viewed_at FROM alert_views WHERE user_id=$1 AND event_id=$2", [req.user.id, evId]);
+    const since = viewed.rowCount ? viewed.rows[0].viewed_at : new Date(0);
+    const rows = (await pool.query(
+      `SELECT id, message, at FROM activity WHERE event_id=$1 AND at > $2 AND message NOT LIKE $3 ORDER BY at DESC LIMIT 20`,
+      [evId, since, req.user.name + " %"]
+    )).rows;
+    // show all including own actions? user wants to see what triggered alerts. Include all.
+    const all = (await pool.query(
+      `SELECT id, message, at FROM activity WHERE event_id=$1 AND at > $2 ORDER BY at DESC LIMIT 20`,
+      [evId, since]
+    )).rows;
+    res.json(all.map(r => ({ id: r.id, message: r.message, at: r.at })));
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not load alerts" }); }
+});
+app.post("/api/events/:id/alerts/seen", auth, async (req, res) => {
+  try {
+    await pool.query(
+      `INSERT INTO alert_views (user_id, event_id, viewed_at) VALUES ($1,$2,NOW())
+       ON CONFLICT (user_id, event_id) DO UPDATE SET viewed_at=NOW()`,
+      [req.user.id, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not clear alerts" }); }
+});
 
 app.get("/api/push/key", auth, (req, res) => res.json({ key: VAPID_PUBLIC }));
 app.post("/api/push/subscribe", auth, async (req, res) => {

@@ -6,6 +6,7 @@ let viewMonth = new Date().getMonth();
 let editingEventId = null;
 let upcomingShown = 10;
 let upcomingFilter = "all";
+let didDeepLink = false;
 let duplicating = false;
 
 async function api(path, opts = {}) {
@@ -163,7 +164,6 @@ async function loadState() {
   document.body.classList.toggle("is-admin", isAdmin());
   renderAll();
   enablePush();
-  openDeepLink();
 }
 
 function renderAuth() {
@@ -187,7 +187,7 @@ function renderCalendar() {
   const startDow = first.getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   $("monthLabel").textContent = first.toLocaleString("en-US", { month: "long", year: "numeric" });
-  $("memberHint").style.display = isAdmin() ? "none" : "block";
+  $("memberHint").style.display = "block";
   const events = eventsForBand(state.currentBandId);
   const cells = [];
   for (let i = 0; i < startDow; i++) cells.push({ date: new Date(y, m, -startDow + i + 1), out: true });
@@ -214,11 +214,11 @@ function renderCalendar() {
       extra = (inn || outn) ? `<div class="glance"><span class="avail-mark AVAILABLE">${inn} in</span> · <span class="avail-mark UNAVAILABLE">${outn} out</span></div>` : "";
     }
     const mine = getAvail(state.currentBandId, state.currentUserId, iso);
-    const fill = (!admin && !out)
+    const fill = !out
       ? (mine === "AVAILABLE" ? "filled-in" : mine === "UNAVAILABLE" ? "filled-out" : "")
       : "";
-    const cycle = (!admin && !out) ? `data-cycle="${iso}"` : "";
-    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}" ${cycle}>
+    const firstEvent = dayEvents[0]?.id || "";
+    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}" data-date="${iso}" data-first-event="${firstEvent}">
       <div class="n">${date.getDate()}</div>
       ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${eventLabel(e)}</span>`).join("")}
       ${out ? "" : extra}
@@ -285,6 +285,23 @@ function renderAll() {
   renderMembers();
 }
 
+
+async function loadEventAlerts(eventId) {
+  const box = $("evAlerts");
+  if (!box) return;
+  if (!eventId) { box.style.display = "none"; box.innerHTML = ""; return; }
+  try {
+    const rows = await api("/api/events/" + eventId + "/alerts");
+    if (!rows.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+    box.style.display = "block";
+    box.innerHTML = "<h3>Recent Alerts</h3><ul>" + rows.map(r => {
+      const when = r.at ? formatMDY(String(r.at).slice(0,10)) : "";
+      return `<li>${r.message}${when ? " · " + when : ""}</li>`;
+    }).join("") + "</ul>";
+    api("/api/events/" + eventId + "/alerts/seen", { method: "POST" }).catch(() => {});
+  } catch { box.style.display = "none"; }
+}
+
 function openEventModal(dateISO, eventId, asCopy) {
   const admin = isAdmin();
   if (!admin && !eventId) return;
@@ -330,6 +347,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evAvailIn").onclick = () => setDot(availDate, "AVAILABLE");
   $("evAvailOut").onclick = () => setDot(availDate, "UNAVAILABLE");
   $("eventModal").classList.add("open");
+  loadEventAlerts(eventId && !asCopy ? eventId : null);
 }
 async function saveEvent() {
   const payload = {
@@ -405,16 +423,19 @@ document.addEventListener("click", async (e) => {
     }
     return;
   }
-  const chip = e.target.closest("[data-eid]");
-  if (chip) { openEventModal(null, chip.dataset.eid); return; }
-  const cycleDay = e.target.closest("[data-cycle]");
-  if (cycleDay && !isAdmin()) {
-    const iso = cycleDay.dataset.cycle;
+  const calDay = e.target.closest("#days .day");
+  if (calDay && !calDay.classList.contains("out")) {
+    const chip = e.target.closest(".chip");
+    if (chip && chip.dataset.eid) { openEventModal(null, chip.dataset.eid); return; }
+    if (calDay.dataset.firstEvent) { openEventModal(null, calDay.dataset.firstEvent); return; }
+    const iso = calDay.dataset.date;
     const cur = getAvail(state.currentBandId, state.currentUserId, iso);
     const next = cur === "" ? "AVAILABLE" : cur === "AVAILABLE" ? "UNAVAILABLE" : "";
     setDot(iso, next === "" ? "CLEAR" : next);
     return;
   }
+  const listEv = e.target.closest("#upcoming [data-eid]");
+  if (listEv) { openEventModal(null, listEv.dataset.eid); return; }
   if (e.target.dataset.editMember) {
     const u = state.users.find(x => x.id === e.target.dataset.editMember);
     if (!u) return;
@@ -542,6 +563,6 @@ $("resendLinkBtn").onclick = async () => {
     };
   }
   if (token && !setup) {
-    try { await loadState(); } catch { token = ""; localStorage.removeItem("mbg.token"); renderAuth(); }
+    try { await loadState(); if (!didDeepLink) { didDeepLink = true; openDeepLink(); } } catch { token = ""; localStorage.removeItem("mbg.token"); renderAuth(); }
   } else renderAuth();
 })();
