@@ -222,7 +222,7 @@ function renderCalendar() {
         if (status === "AVAILABLE") inn++;
         if (status === "UNAVAILABLE") outn++;
       });
-      extra = `<div class="glance"><span class="avail-mark AVAILABLE" data-roster="in" data-date="${iso}">${inn} in</span> · <span class="avail-mark UNAVAILABLE" data-roster="out" data-date="${iso}">${outn} out</span></div>`;
+      extra = `<div class="glance avail-mark" data-roster="both" data-date="${iso}"><span class="AVAILABLE">${inn} in</span> · <span class="UNAVAILABLE">${outn} out</span></div>`;
     }
     const mine = getAvail(state.currentBandId, state.currentUserId, iso);
     const fill = !out
@@ -448,7 +448,7 @@ document.addEventListener("click", async (e) => {
   const calDay = e.target.closest("#days .day");
   if (calDay && !calDay.classList.contains("out")) {
     const rosterTap = e.target.closest("[data-roster]");
-    if (rosterTap) { openRoster(rosterTap.dataset.date, rosterTap.dataset.roster); return; }
+    if (rosterTap) { openRoster(rosterTap.dataset.date); return; }
     const chip = e.target.closest(".chip");
     if (chip && chip.dataset.eid) { openEventModal(null, chip.dataset.eid); return; }
     if (calDay.dataset.firstEvent) { openEventModal(null, calDay.dataset.firstEvent); return; }
@@ -549,16 +549,20 @@ if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
 
 $("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"); document.body.classList.remove("is-admin"); renderAuth(); };
-function openRoster(iso, which) {
-  const title = which === "out" ? "Out" : "In";
-  $("rosterTitle").textContent = `${title} — ${formatMDY(iso)}`;
-  const want = which === "out" ? "UNAVAILABLE" : "AVAILABLE";
-  const names = bandMembers(state.currentBandId)
-    .filter(mem => getAvail(state.currentBandId, mem.user.id, iso) === want)
-    .map(mem => displayName(mem.user));
-  $("rosterList").innerHTML = names.length
-    ? names.map(n => `<div class="event" style="cursor:default"><div class="meta">${n}</div></div>`).join("")
-    : `<div class="hint">Nobody marked ${title.toLowerCase()}.</div>`;
+function openRoster(iso) {
+  $("rosterTitle").textContent = formatMDY(iso);
+  const roster = bandMembers(state.currentBandId);
+  const ins = [], outs = [], blank = [];
+  roster.forEach(mem => {
+    const st = getAvail(state.currentBandId, mem.user.id, iso);
+    const n = displayName(mem.user);
+    if (st === "AVAILABLE") ins.push(n);
+    else if (st === "UNAVAILABLE") outs.push(n);
+    else blank.push(n);
+  });
+  const block = (label, cls, arr) =>
+    `<div class="event" style="cursor:default"><div class="meta"><strong class="${cls}">${label}</strong><div style="margin-top:4px">${arr.length ? arr.join("<br>") : "—"}</div></div></div>`;
+  $("rosterList").innerHTML = block("In", "AVAILABLE", ins) + block("Out", "UNAVAILABLE", outs) + (blank.length ? block("Not marked", "", blank) : "");
   $("rosterModal").classList.add("open");
 }
 if ($("closeRosterBtn")) $("closeRosterBtn").onclick = () => $("rosterModal").classList.remove("open");
