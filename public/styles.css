@@ -296,3 +296,46 @@ body:not(.is-admin) #evVenue{
   height:20px;
   cursor:pointer;
 }
+
+.bday-wrap{
+  position:relative;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  min-height:44px;
+  background:#101217;
+  border:1px solid var(--line);
+  border-radius:10px;
+}
+.bday-label{
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#fff;
+  pointer-events:none;
+  z-index:1;
+  font-size:16px;
+}
+.bday-icon{
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  pointer-events:none;
+  z-index:1;
+}
+.bday-wrap #profBday{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:44px !important;
+  opacity:0.01 !important;
+  pointer-events:auto !important;
+  z-index:2 !important;
+  border:0 !important;
+  background:transparent !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+}

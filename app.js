@@ -111,6 +111,10 @@ function bdayFromSelects() {
   if (!$("profBdayY") || !$("profBdayY").value) return "";
   return `${$("profBdayY").value}-${$("profBdayM").value}-${$("profBdayD").value}`;
 }
+function syncBdayLabel() {
+  const iso = $("profBday") && $("profBday").value;
+  if ($("profBdayLabel")) $("profBdayLabel").textContent = iso ? formatMDY(iso) : "mm/dd/yyyy";
+}
 function formatMDY(iso) {
   if (!iso) return "";
   const [y,m,d] = String(iso).slice(0,10).split("-");
@@ -554,7 +558,10 @@ async function openProfile() {
   $("profLast").value = me.lastName || (me.name || "").split(" ").slice(1).join(" ") || "";
   $("profPhone").value = me.phone || "";
   $("profEmail").value = me.email || "";
-  if ($("profBday")) $("profBday").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
+  if ($("profBday")) {
+    $("profBday").value = me.birthday ? String(me.birthday).slice(0, 10) : "";
+    syncBdayLabel();
+  }
   $("profCurPass").value = "";
   $("profNewPass").value = "";
   $("profileModal").classList.add("open");
@@ -587,6 +594,10 @@ async function copyCal(kind) {
     await navigator.clipboard.writeText(url);
     toast("Link copied. Paste it in Google Calendar → From URL");
   } catch (err) { toast(err.message); }
+}
+if ($("profBday")) {
+  $("profBday").addEventListener("input", syncBdayLabel);
+  $("profBday").addEventListener("change", syncBdayLabel);
 }
 if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
