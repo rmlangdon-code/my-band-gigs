@@ -605,7 +605,14 @@ if ($("profBday")) {
 if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
 
-$("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"); document.body.classList.remove("is-admin"); renderAuth(); };
+$("logoutBtn").onclick = () => {
+  token = "";
+  localStorage.removeItem("mbg.token");
+  document.body.classList.remove("is-admin");
+  document.querySelectorAll(".overlay.open").forEach(el => el.classList.remove("open"));
+  ["profileModal","eventModal","memberModal","rosterModal"].forEach(id => { if ($(id)) $(id).classList.remove("open"); });
+  renderAuth();
+};
 function openRoster(iso) {
   $("rosterTitle").textContent = formatMDY(iso);
   const roster = bandMembers(state.currentBandId);
