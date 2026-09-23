@@ -566,10 +566,14 @@ async function copyCal(kind) {
     toast("Link copied. Paste it in Google Calendar → From URL");
   } catch (err) { toast(err.message); }
 }
-if ($("profBdayBtn") && $("profBdayISO")) {
-  $("profBdayBtn").onclick = (e) => { e.preventDefault(); try { $("profBdayISO").showPicker(); } catch (err) { $("profBdayISO").click(); } };
-  $("profBdayISO").addEventListener("change", () => { $("profBday").value = formatMDY($("profBdayISO").value); });
-  $("profBday").addEventListener("change", () => { const iso = parseMDY($("profBday").value); if (iso && $("profBdayISO")) $("profBdayISO").value = iso; });
+if ($("profBdayISO")) {
+  const syncBday = () => { if ($("profBdayISO").value) $("profBday").value = formatMDY($("profBdayISO").value); };
+  $("profBdayISO").addEventListener("input", syncBday);
+  $("profBdayISO").addEventListener("change", syncBday);
+  $("profBday").addEventListener("change", () => {
+    const iso = parseMDY($("profBday").value);
+    if (iso) $("profBdayISO").value = iso;
+  });
 }
 if ($("copyCalAll")) $("copyCalAll").onclick = () => copyCal("all");
 if ($("copyCalMine")) $("copyCalMine").onclick = () => copyCal("mine");
