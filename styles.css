@@ -223,3 +223,34 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
   z-index:3;
 }
 .date-cal-btn{z-index:2;pointer-events:none}
+
+select{-webkit-appearance:none;appearance:none;background-image:none}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="number"]::-webkit-inner-spin-button{
+  -webkit-appearance:none;appearance:none;display:none;opacity:0
+}
+.date-wrap{position:relative;width:100%}
+.date-wrap #evDate,.date-wrap #profBday{
+  width:100%;box-sizing:border-box;text-align:left;padding-right:44px;color:#fff
+}
+.date-wrap #evDateISO,.date-wrap #profBdayISO{
+  position:absolute !important;
+  right:2px;top:50%;transform:translateY(-50%);
+  width:40px !important;height:40px !important;
+  opacity:0 !important;border:0 !important;padding:0 !important;margin:0 !important;
+  pointer-events:auto;z-index:3
+}
+body:not(.is-admin) #evDateISO,
+body:not(.is-admin) #evDateBtn{display:none !important}
+body:not(.is-admin) #evBand,
+body:not(.is-admin) #evTitle,
+body:not(.is-admin) #evType,
+body:not(.is-admin) #evDate,
+body:not(.is-admin) #evStart,
+body:not(.is-admin) #evEnd,
+body:not(.is-admin) #evVenue{
+  pointer-events:none;
+  -webkit-appearance:none;
+  appearance:none;
+}

@@ -367,6 +367,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evType").value = ev?.type || "gig";
   const isoDate = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
   $("evDate").type = "text";
+  $("evDate").readOnly = !admin;
   $("evDate").value = formatMDY(isoDate);
   if ($("evDateISO")) $("evDateISO").value = isoDate;
   if ($("evDateBtn")) $("evDateBtn").style.display = admin ? "" : "none";
