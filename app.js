@@ -5,6 +5,7 @@ let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 let editingEventId = null;
 let upcomingShown = 10;
+let upcomingFilter = "all";
 let duplicating = false;
 
 async function api(path, opts = {}) {
@@ -204,24 +205,20 @@ function renderCalendar() {
     const roster = bandMembers(state.currentBandId);
     let extra = "";
     if (admin) {
-      const marked = roster.map(mem => {
+      let inn = 0, outn = 0;
+      roster.forEach(mem => {
         const status = getAvail(state.currentBandId, mem.user.id, iso);
-        if (!status) return "";
-        return `<span class="avail-mark ${status}">${firstName(mem.user)} ${status === "UNAVAILABLE" ? "out" : "in"}</span>`;
-      }).join("");
-      extra = marked ? `<div class="glance">${marked}</div>` : "";
-    } else {
-      const mine = getAvail(state.currentBandId, state.currentUserId, iso);
-      extra = `<div class="dots">
-        <button class="pick in ${mine === "AVAILABLE" ? "on" : ""}" data-dot="AVAILABLE" data-date="${iso}" title="Available"></button>
-        <button class="pick out ${mine === "UNAVAILABLE" ? "on" : ""}" data-dot="UNAVAILABLE" data-date="${iso}" title="Unavailable"></button>
-      </div>`;
+        if (status === "AVAILABLE") inn++;
+        if (status === "UNAVAILABLE") outn++;
+      });
+      extra = (inn || outn) ? `<div class="glance"><span class="avail-mark AVAILABLE">${inn} in</span> · <span class="avail-mark UNAVAILABLE">${outn} out</span></div>` : "";
     }
+    const mine = getAvail(state.currentBandId, state.currentUserId, iso);
     const fill = (!admin && !out)
-      ? (getAvail(state.currentBandId, state.currentUserId, iso) === "AVAILABLE" ? "filled-in"
-        : getAvail(state.currentBandId, state.currentUserId, iso) === "UNAVAILABLE" ? "filled-out" : "")
+      ? (mine === "AVAILABLE" ? "filled-in" : mine === "UNAVAILABLE" ? "filled-out" : "")
       : "";
-    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}">
+    const cycle = (!admin && !out) ? `data-cycle="${iso}"` : "";
+    return `<div class="day ${out ? "out" : ""} ${iso === todayISO ? "today" : ""} ${fill}" ${cycle}>
       <div class="n">${date.getDate()}</div>
       ${dayEvents.slice(0, 2).map(e => `<span class="chip ${e.type}" data-eid="${e.id}">${eventLabel(e)}</span>`).join("")}
       ${out ? "" : extra}
@@ -229,8 +226,10 @@ function renderCalendar() {
   }).join("");
 }
 function renderUpcoming() {
+  document.querySelectorAll(".upcoming-filter").forEach(b => b.classList.toggle("on", b.dataset.upfilter === upcomingFilter));
   const today = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-  const all = eventsForBand(state.currentBandId).filter(e => e.date >= today);
+  let all = eventsForBand(state.currentBandId).filter(e => e.date >= today);
+  if (upcomingFilter === "mine") all = all.filter(e => getAvail(e.bandId, state.currentUserId, e.date) === "AVAILABLE");
   const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
   const more = all.length > upcomingShown
@@ -313,6 +312,19 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evNotes").value = ev?.notes || "";
   const availDate = ev?.date || dateISO || $("evDate").value;
   const mine = getAvail(ev?.bandId || $("evBand").value || state.currentBandId, state.currentUserId, availDate);
+  const bandForAvail = ev?.bandId || $("evBand").value || state.currentBandId;
+  if ($("evLineup")) {
+    const roster = bandMembers(bandForAvail === "all" ? state.currentBandId : bandForAvail);
+    const ins = [], outs = [];
+    roster.forEach(mem => {
+      const st = getAvail(bandForAvail, mem.user.id, availDate);
+      if (st === "AVAILABLE") ins.push(firstName(mem.user));
+      if (st === "UNAVAILABLE") outs.push(firstName(mem.user));
+    });
+    $("evLineup").innerHTML = (admin || ins.length || outs.length)
+      ? `<div><strong>In:</strong> ${ins.join(", ") || "—"}</div><div><strong>Out:</strong> ${outs.join(", ") || "—"}</div>`
+      : "";
+  }
   $("evAvailIn").classList.toggle("on", mine === "AVAILABLE");
   $("evAvailOut").classList.toggle("on", mine === "UNAVAILABLE");
   $("evAvailIn").onclick = () => setDot(availDate, "AVAILABLE");
@@ -336,7 +348,7 @@ async function saveEvent() {
 }
 async function setDot(iso, status) {
   const current = getAvail(state.currentBandId, state.currentUserId, iso);
-  const next = current === status ? "" : status;
+  const next = status === "CLEAR" ? "" : (current === status ? "" : status);
   try {
     const ids = isMergedView() ? myBandIds() : [state.currentBandId];
     for (const bandId of ids.filter(Boolean)) {
@@ -372,6 +384,8 @@ document.addEventListener("click", async (e) => {
     return;
   }
   if (e.target.id === "showMoreUpcoming") { upcomingShown += 10; renderUpcoming(); return; }
+  const uf = e.target.closest("[data-upfilter]");
+  if (uf) { upcomingFilter = uf.dataset.upfilter; upcomingShown = 10; renderUpcoming(); return; }
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; upcomingShown = 10; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
@@ -393,6 +407,14 @@ document.addEventListener("click", async (e) => {
   }
   const chip = e.target.closest("[data-eid]");
   if (chip) { openEventModal(null, chip.dataset.eid); return; }
+  const cycleDay = e.target.closest("[data-cycle]");
+  if (cycleDay && !isAdmin()) {
+    const iso = cycleDay.dataset.cycle;
+    const cur = getAvail(state.currentBandId, state.currentUserId, iso);
+    const next = cur === "" ? "AVAILABLE" : cur === "AVAILABLE" ? "UNAVAILABLE" : "";
+    setDot(iso, next === "" ? "CLEAR" : next);
+    return;
+  }
   if (e.target.dataset.editMember) {
     const u = state.users.find(x => x.id === e.target.dataset.editMember);
     if (!u) return;

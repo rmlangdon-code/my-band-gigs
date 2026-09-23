@@ -60,12 +60,16 @@
           <span><i class="dot out"></i>Unavailable</span>
           <button class="btn btn-primary admin-only" id="addEventBtn">Add event</button>
         </div>
-        <p class="hint" id="memberHint" style="display:none">Tap the green or red dot on a date. Green = available, red = unavailable. Tap again to clear.</p>
+        <p class="hint" id="memberHint" style="display:none">Tap a date: once = available (green), twice = unavailable (red), again = clear.</p>
         <div class="weekdays"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
         <div id="days" class="days"></div>
       </div>
       <div class="card" style="margin-top:12px">
         <div class="section-label">Upcoming</div>
+        <div class="legend" style="margin-top:0">
+          <button class="btn upcoming-filter on" data-upfilter="all">All</button>
+          <button class="btn upcoming-filter" data-upfilter="mine">My gigs only</button>
+        </div>
         <div id="upcoming" class="event-list"></div>
       </div>
       <div class="card admin-only" id="membersCard" style="margin-top:12px">
@@ -103,6 +107,7 @@
       <div class="form-row"><label>End</label><select id="evEnd"></select></div>
       <div class="form-row"><label>Venue</label><input id="evVenue" /></div>
       <div class="form-row"><label>Notes</label><textarea id="evNotes" rows="3"></textarea></div>
+      <div id="evLineup" class="hint" style="margin:8px 0"></div>
       <div class="form-row" id="evAvailRow">
         <label>My status</label>
         <div class="dots" style="margin-top:4px">
