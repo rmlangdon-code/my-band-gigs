@@ -149,3 +149,19 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 .alert-log{background:#101217;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;font-size:13px}
 .alert-log h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .alert-log li{margin:4px 0;color:var(--text)}
+
+.form-row input,.form-row select,.form-row textarea{width:100%;max-width:100%;box-sizing:border-box;display:block}
+.date-wrap{display:block;width:100%;max-width:100%;box-sizing:border-box}
+.date-wrap input[type="date"]{
+  width:100%;max-width:100%;box-sizing:border-box;
+  text-align:left;
+  display:block;
+}
+.date-wrap input[type="date"]::-webkit-datetime-edit{
+  text-align:left;
+  padding:0;
+  display:inline-flex;
+  justify-content:flex-start;
+  width:auto;
+}
+#eventModal .modal-card{overflow-x:hidden}

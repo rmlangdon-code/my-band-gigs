@@ -296,7 +296,7 @@ async function loadEventAlerts(eventId) {
     box.style.display = "block";
     box.innerHTML = "<h3>Recent Alerts</h3><ul>" + rows.map(r => {
       const when = r.at ? formatMDY(String(r.at).slice(0,10)) : "";
-      return `<li>${r.message}${when ? " · " + when : ""}</li>`;
+      return `<li>${r.message}</li>`;
     }).join("") + "</ul>";
     api("/api/events/" + eventId + "/alerts/seen", { method: "POST" }).catch(() => {});
   } catch { box.style.display = "none"; }

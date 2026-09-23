@@ -34,6 +34,38 @@ app.use(express.json());
 if (PUBLIC_DIR) app.use(express.static(PUBLIC_DIR));
 
 const id = () => crypto.randomUUID();
+function fmtDateMDY(iso) {
+  if (!iso) return "(none)";
+  const d = String(iso).slice(0, 10);
+  const [y,m,da] = d.split("-");
+  return m && da && y ? `${m}/${da}/${y}` : d;
+}
+function fmtTime12(t) {
+  if (!t) return "";
+  const [h0, mi] = String(t).split(":");
+  let h = parseInt(h0, 10);
+  if (Number.isNaN(h)) return String(t);
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${(mi || "00").slice(0,2)} ${ampm}`;
+}
+function eventChangeLines(oldRow, next) {
+  const lines = [];
+  const oldDate = String(oldRow.date || "").slice(0, 10);
+  const newDate = String(next.date || "").slice(0, 10);
+  if (newDate && newDate !== oldDate) lines.push(`Alert: Date changed from ${fmtDateMDY(oldDate)} to ${fmtDateMDY(newDate)}`);
+  const oldT = `${fmtTime12(oldRow.start_time)} – ${fmtTime12(oldRow.end_time)}`.trim();
+  const newT = `${fmtTime12(next.start)} – ${fmtTime12(next.end)}`.trim();
+  if ((next.start || next.end) && newT !== oldT) lines.push(`Alert: Time changed from ${oldT} to ${newT}`);
+  const oldCity = (oldRow.title || "").trim();
+  const newCity = (next.title || "").trim();
+  if (newCity && newCity !== oldCity) lines.push(`Alert: City changed from ${oldCity || "(none)"} to ${newCity}`);
+  const oldV = (oldRow.venue || "").trim();
+  const newV = (next.venue || "").trim();
+  if (newV !== oldV) lines.push(`Alert: Venue changed from ${oldV || "(none)"} to ${newV || "(none)"}`);
+  return lines;
+}
+
 
 async function initDb() {
   await pool.query(`
@@ -268,8 +300,6 @@ app.post("/api/events", auth, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes]
     );
-    await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
-      [id(), bandId, ev.id, `${req.user.name} added this ${ev.type}`]);
     res.json(ev);
     const band = (await pool.query("SELECT short, name FROM bands WHERE id=$1", [bandId])).rows[0];
     const label = ((band && band.short) ? band.short + " - " : "") + ev.title;
@@ -289,13 +319,24 @@ app.put("/api/events/:id", auth, async (req, res) => {
       [type || old.type, title || old.title, date || old.date, start || old.start_time, end || old.end_time,
        venue ?? old.venue, notes ?? old.notes, bandId || old.band_id, req.params.id]
     );
-    await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
-      [id(), bandId || old.band_id, req.params.id, `${req.user.name} updated this event`]);
-    res.json({ ok: true });
+    const next = {
+      title: title || old.title,
+      date: date || old.date,
+      start: start || old.start_time,
+      end: end || old.end_time,
+      venue: venue ?? old.venue
+    };
+    const lines = eventChangeLines(old, next);
     const bid = bandId || old.band_id;
+    for (const msg of lines) {
+      await pool.query("INSERT INTO activity (id, band_id, event_id, message) VALUES ($1,$2,$3,$4)",
+        [id(), bid, req.params.id, msg]);
+    }
+    res.json({ ok: true });
     const band = (await pool.query("SELECT short FROM bands WHERE id=$1", [bid])).rows[0];
-    const t = title || old.title;
-    notifyBand(bid, { title: "Event updated", body: ((band && band.short) ? band.short + " - " : "") + t, eventId: req.params.id, date: date || old.date });
+    const t = next.title;
+    const pushBody = lines.length ? lines.join(" · ") : (((band && band.short) ? band.short + " - " : "") + t);
+    notifyBand(bid, { title: "Event updated", body: pushBody, eventId: req.params.id, date: next.date });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not update event" }); }
 });
 
