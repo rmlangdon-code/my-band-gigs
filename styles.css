@@ -179,3 +179,15 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
   opacity:1 !important;
 }
 #eventModal option{color:#fff;background:#101217}
+
+.date-wrap input[type="date"]{
+  position:absolute !important;
+  left:0;top:0;
+  width:1px !important;
+  height:1px !important;
+  opacity:0 !important;
+  pointer-events:none;
+  border:0 !important;
+  padding:0 !important;
+  margin:0 !important;
+}
