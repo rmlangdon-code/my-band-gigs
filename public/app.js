@@ -78,6 +78,11 @@ function getAvail(bandId, userId, iso) {
   return state.availability[`${bandId}:${userId}:${iso}`] || "";
 }
 function toISODate(y, m, d) { return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+function parseMDY(s) {
+  const m = String(s||"").trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return "";
+  return `${m[3]}-${String(m[1]).padStart(2,"0")}-${String(m[2]).padStart(2,"0")}`;
+}
 function formatMDY(iso) {
   if (!iso) return "";
   const [y,m,d] = String(iso).slice(0,10).split("-");
@@ -322,7 +327,11 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evBand").value = ev?.bandId || (isMergedView() ? ids[0] : state.currentBandId) || ids[0];
   $("evTitle").value = ev?.title || "";
   $("evType").value = ev?.type || "gig";
-  $("evDate").value = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
+  const isoDate = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
+  $("evDate").type = "text";
+  $("evDate").value = formatMDY(isoDate);
+  if ($("evDateISO")) $("evDateISO").value = isoDate;
+  if ($("evDateBtn")) $("evDateBtn").style.display = admin ? "" : "none";
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
@@ -352,7 +361,7 @@ function openEventModal(dateISO, eventId, asCopy) {
 async function saveEvent() {
   const payload = {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
-    date: $("evDate").value, start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
+    date: ($("evDateISO") && $("evDateISO").value) || parseMDY($("evDate").value) || $("evDate").value, start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
     venue: $("evVenue").value.trim(), notes: $("evNotes").value.trim()
   };
   try {
@@ -478,8 +487,19 @@ $("logoutBtn").onclick = () => { token = ""; localStorage.removeItem("mbg.token"
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
-$("evDate").addEventListener("click", () => { try { $("evDate").showPicker(); } catch (e) {} });
-$("evDate").addEventListener("focus", () => { try { $("evDate").showPicker(); } catch (e) {} });
+if ($("evDateBtn") && $("evDateISO")) {
+  $("evDateBtn").onclick = (e) => {
+    e.preventDefault();
+    try { $("evDateISO").showPicker(); } catch (err) { $("evDateISO").click(); }
+  };
+  $("evDateISO").addEventListener("change", () => {
+    $("evDate").value = formatMDY($("evDateISO").value);
+  });
+  $("evDate").addEventListener("change", () => {
+    const iso = parseMDY($("evDate").value);
+    if (iso && $("evDateISO")) $("evDateISO").value = iso;
+  });
+}
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
 $("dupEventBtn").onclick = () => {
