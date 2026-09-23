@@ -339,3 +339,18 @@ body:not(.is-admin) #evVenue{
   color:transparent !important;
   -webkit-text-fill-color:transparent !important;
 }
+
+.bday-wrap #evDate{
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  min-height:44px !important;
+  opacity:0.01 !important;
+  pointer-events:auto !important;
+  z-index:2 !important;
+  border:0 !important;
+  background:transparent !important;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+}

@@ -111,6 +111,10 @@ function bdayFromSelects() {
   if (!$("profBdayY") || !$("profBdayY").value) return "";
   return `${$("profBdayY").value}-${$("profBdayM").value}-${$("profBdayD").value}`;
 }
+function syncEvDateLabel() {
+  const iso = $("evDate") && $("evDate").value;
+  if ($("evDateLabel")) $("evDateLabel").textContent = iso ? formatMDY(iso) : "mm/dd/yyyy";
+}
 function syncBdayLabel() {
   const iso = $("profBday") && $("profBday").value;
   if ($("profBdayLabel")) $("profBdayLabel").textContent = iso ? formatMDY(iso) : "mm/dd/yyyy";
@@ -392,11 +396,10 @@ function openEventModal(dateISO, eventId, asCopy) {
   $("evTitle").value = ev?.title || "";
   $("evType").value = ev?.type || "gig";
   const isoDate = ev?.date || dateISO || toISODate(viewYear, viewMonth, 1);
-  $("evDate").type = "text";
-  $("evDate").readOnly = !admin;
-  $("evDate").value = formatMDY(isoDate);
-  if ($("evDateISO")) $("evDateISO").value = isoDate;
-  if ($("evDateBtn")) $("evDateBtn").style.display = admin ? "" : "none";
+  $("evDate").type = "date";
+  $("evDate").value = isoDate;
+  syncEvDateLabel();
+  if ($("evDateWrap")) $("evDateWrap").style.pointerEvents = admin ? "auto" : "none";
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
@@ -426,7 +429,7 @@ function openEventModal(dateISO, eventId, asCopy) {
 async function saveEvent() {
   const payload = {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
-    date: parseMDY($("evDate").value) || ($("evDateISO") && $("evDateISO").value) || $("evDate").value,
+    date: $("evDate").value || parseMDY(($("evDateLabel") && $("evDateLabel").textContent) || "") || $("evDate").value,
     start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
     venue: $("evVenue").value.trim(), notes: ""
   };
@@ -624,18 +627,9 @@ if ($("rosterModal")) $("rosterModal").addEventListener("click", e => { if (e.ta
 $("prevMonth").onclick = () => { viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; } renderCalendar(); };
 $("nextMonth").onclick = () => { viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCalendar(); };
 $("addEventBtn").onclick = () => openEventModal(toISODate(viewYear, viewMonth, new Date().getDate()));
-if ($("evDateBtn") && $("evDateISO")) {
-  $("evDateBtn").onclick = (e) => {
-    e.preventDefault();
-    try { $("evDateISO").showPicker(); } catch (err) { $("evDateISO").click(); }
-  };
-  $("evDateISO").addEventListener("change", () => {
-    $("evDate").value = formatMDY($("evDateISO").value);
-  });
-  $("evDate").addEventListener("change", () => {
-    const iso = parseMDY($("evDate").value);
-    if (iso && $("evDateISO")) $("evDateISO").value = iso;
-  });
+if ($("evDate")) {
+  $("evDate").addEventListener("input", syncEvDateLabel);
+  $("evDate").addEventListener("change", syncEvDateLabel);
 }
 $("cancelEvent").onclick = () => $("eventModal").classList.remove("open");
 $("saveEvent").onclick = saveEvent;
