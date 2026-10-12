@@ -362,6 +362,24 @@ app.delete("/api/bands/:id", auth, async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete band" }); }
 });
 
+
+app.post("/api/admin/regeocode", auth, async (req, res) => {
+  try {
+    const rows = (await pool.query("SELECT id, title, venue, address FROM events")).rows;
+    let fixed = 0;
+    for (const e of rows) {
+      const q = e.address || e.venue;
+      if (!q) continue;
+      const geo = await geocodePlace(e.title, q);
+      if (geo.lat != null && geo.lng != null) {
+        await pool.query("UPDATE events SET lat=$1, lng=$2 WHERE id=$3", [geo.lat, geo.lng, e.id]);
+        fixed++;
+      }
+    }
+    res.json({ ok: true, fixed });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Re-pin failed" }); }
+});
+
 app.post("/api/events", auth, async (req, res) => {
   try {
     const { bandId, type, title, date, start, end, venue, address, notes, lat: inLat, lng: inLng } = req.body;

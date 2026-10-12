@@ -557,6 +557,17 @@ async function setDot(iso, status) {
   } catch (err) { toast(err.message); }
 }
 
+if ($("regeocodeBtn")) {
+  $("regeocodeBtn").style.display = isAdmin() ? "" : "none";
+  $("regeocodeBtn").onclick = async () => {
+    if (!confirm("Re-pin every gig using Google?")) return;
+    try {
+      const r = await api("/api/admin/regeocode", { method: "POST" });
+      await loadState();
+      toast("Re-pinned " + (r.fixed || 0) + " gigs");
+    } catch (err) { toast(err.message); }
+  };
+}
 document.addEventListener("click", async (e) => {
   if (e.target.id === "deleteBandBtn") {
     const b = currentBand();
@@ -818,6 +829,17 @@ if ($("evNoteAdd")) $("evNoteAdd").onclick = async () => {
     await loadEventNotes(notesEventId);
   } catch (err) { toast(err.message); }
 };
+if ($("regeocodeBtn")) {
+  $("regeocodeBtn").style.display = isAdmin() ? "" : "none";
+  $("regeocodeBtn").onclick = async () => {
+    if (!confirm("Re-pin every gig using Google?")) return;
+    try {
+      const r = await api("/api/admin/regeocode", { method: "POST" });
+      await loadState();
+      toast("Re-pinned " + (r.fixed || 0) + " gigs");
+    } catch (err) { toast(err.message); }
+  };
+}
 document.addEventListener("click", async (e) => {
   if (e.target.dataset.noteEdit && notesEventId) {
     const cur = e.target.closest(".note-item")?.querySelector(".note-text")?.textContent || "";
