@@ -315,7 +315,7 @@ function renderUpcoming() {
   }
 }
 async function geocodeClient(e) {
-  const q = [e.venue, e.title, "USA"].filter(Boolean).join(", ");
+  const q = [e.address || e.venue, e.title, "USA"].filter(Boolean).join(", ");
   if (q.length < 5) return null;
   try {
     const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us,ca&q=" + encodeURIComponent(q), {
@@ -479,7 +479,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   duplicating = !!asCopy;
   const ev = state.events.find(e => e.id === eventId);
   $("modalTitle").textContent = !admin ? "Event details" : (asCopy ? "Duplicate event" : (ev ? "Edit event" : "Add gig or rehearsal"));
-  ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
+  ["evBand","evTitle","evType","evDate","evStart","evEnd","evVenue","evAddress"].forEach(id => { if ($(id)) $(id).disabled = !admin; });
   $("saveEvent").style.display = admin ? "" : "none";
   if ($("deleteEventBtn")) $("deleteEventBtn").style.display = admin && editingEventId ? "" : "none";
   if ($("dupEventBtn")) $("dupEventBtn").style.display = admin && eventId && !asCopy ? "" : "none";
@@ -497,6 +497,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
+  if ($("evAddress")) $("evAddress").value = ev?.address || "";
   if ($("evLat")) $("evLat").value = (ev && Number.isFinite(Number(ev.lat))) ? String(ev.lat) : "";
   if ($("evLng")) $("evLng").value = (ev && Number.isFinite(Number(ev.lng))) ? String(ev.lng) : "";
   const availDate = ev?.date || dateISO || $("evDate").value;
@@ -527,7 +528,9 @@ async function saveEvent() {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
     date: parseMDY($("evDate").value) || $("evDate").value,
     start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
-    venue: $("evVenue").value.trim(), notes: "",
+    venue: $("evVenue").value.trim(),
+    address: ($("evAddress") && $("evAddress").value.trim()) || "",
+    notes: "",
     lat: $("evLat") && $("evLat").value.trim() ? Number($("evLat").value) : null,
     lng: $("evLng") && $("evLng").value.trim() ? Number($("evLng").value) : null
   };
