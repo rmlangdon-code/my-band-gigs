@@ -47,10 +47,19 @@ function httpsGet(url) {
 async function geocodePlace(title, venue) {
   const q = [venue, title, "USA"].filter(Boolean).join(", ").trim();
   if (q.length < 5) return { lat: null, lng: null };
+  const key = process.env.GOOGLE_MAPS_KEY;
+  if (!key) {
+    console.error("geocode: GOOGLE_MAPS_KEY not set");
+    return { lat: null, lng: null };
+  }
   try {
-    const raw = await httpsGet("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us,ca&q=" + encodeURIComponent(q));
-    const arr = JSON.parse(raw || "[]");
-    if (arr[0] && arr[0].lat) return { lat: Number(arr[0].lat), lng: Number(arr[0].lon) };
+    const url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + encodeURIComponent(q) + "&key=" + key;
+    const raw = await httpsGet(url);
+    const data = JSON.parse(raw || "{}");
+    const loc = data.results && data.results[0] && data.results[0].geometry && data.results[0].geometry.location;
+    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+      return { lat: Number(loc.lat), lng: Number(loc.lng) };
+    }
   } catch (err) { console.error("geocode", err.message); }
   return { lat: null, lng: null };
 }
