@@ -317,20 +317,6 @@ function renderUpcoming() {
 async function geocodeClient(e) {
   // Disabled: Nominatim was overwriting Google pins with bad results.
   return { lat: null, lng: null };
-  /* original Nominatim code removed
-  const q = [e.address || e.venue, e.title, "USA"].filter(Boolean).join(", ");
-  if (q.length < 5) return null;
-  try {
-    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us,ca&q=" + encodeURIComponent(q), {
-      headers: { "Accept": "application/json" }
-    });
-    const arr = await res.json();
-    if (!arr[0]) return null;
-    const lat = Number(arr[0].lat), lng = Number(arr[0].lon);
-    e.lat = lat; e.lng = lng;
-    api("/api/events/" + e.id + "/geo", { method: "POST", body: { lat, lng } }).catch(() => {});
-    return { lat, lng };
-  } catch { return null; }
 }
 async function drawGigMap(events) {
   if (typeof L === "undefined" || !$("upcomingMap")) {
