@@ -7,7 +7,6 @@ let editingEventId = null;
 let upcomingShown = 10;
 let upcomingFilter = "all";
 let upcomingView = "list";
-let gigMap = null;
 let didDeepLink = false;
 let duplicating = false;
 
@@ -212,6 +211,10 @@ function openDeepLink() {
 }
 
 async function loadState() {
+  // ensure re-pin button visibility after data loads
+  setTimeout(() => {
+    if ($("regeocodeBtn")) $("regeocodeBtn").style.display = (upcomingView === "map" && isAdmin()) ? "" : "none";
+  }, 50);
   const data = await api("/api/state");
   if (data.events) data.events = data.events.map(e => ({ ...e, date: normDate(e.date) }));
   state = { ...state, ...data, currentBandId: state.currentBandId || "all" };
@@ -292,9 +295,8 @@ function renderUpcoming() {
   const all = upcomingEvents();
   const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
-  const listOn = upcomingView !== "map";
   if ($("upcoming")) $("upcoming").style.display = listOn ? "" : "none";
-  if ($("upcomingMapWrap")) $("upcomingMapWrap").style.display = listOn ? "none" : "block";
+  
   if (listOn) {
     const more = all.length > upcomingShown
       ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
@@ -311,65 +313,6 @@ function renderUpcoming() {
         </div>` : ""}
       </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
   } else {
-    drawGigMap(all);
-  }
-}
-async function geocodeClient(e) {
-  // Disabled: Nominatim was overwriting Google pins with bad results.
-  return { lat: null, lng: null };
-}
-async function drawGigMap(events) {
-  if (typeof L === "undefined" || !$("upcomingMap")) {
-    if ($("mapHint")) $("mapHint").textContent = "Map library did not load.";
-    return;
-  }
-  if (!gigMap) {
-    gigMap = L.map("upcomingMap", { scrollWheelZoom: true }).setView([39.8, -98.5], 4);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(gigMap);
-  }
-  if (gigMap._mbgLayer) gigMap.removeLayer(gigMap._mbgLayer);
-  const layer = L.layerGroup();
-  gigMap._mbgLayer = layer;
-  let pinned = 0, missing = 0;
-  for (const e of events) {
-    let lat = Number(e.lat), lng = Number(e.lng);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      missing++;
-      continue;
-    }
-    pinned++;
-    const m = L.marker([lat, lng]);
-    m.bindPopup(`<strong>${eventLabel(e)}</strong><br>${formatMDY(e.date)}<br>${e.venue || ""}`);
-    m.on("click", () => openEventModal(null, e.id));
-    m.addTo(layer);
-  }
-  layer.addTo(gigMap);
-  setTimeout(() => gigMap.invalidateSize(), 80);
-  if (pinned) {
-    const pts = [];
-    layer.eachLayer(l => { if (l.getLatLng) pts.push(l.getLatLng()); });
-    if (pts.length === 1) gigMap.setView(pts[0], 8);
-    else if (pts.length > 1) gigMap.fitBounds(L.latLngBounds(pts).pad(0.25));
-  } else {
-    gigMap.setView([39.8, -98.5], 4);
-  }
-  if ($("mapHint")) {
-    $("mapHint").textContent = pinned
-      ? (missing ? `${pinned} pin${pinned===1?"":"s"} · ${missing} need a city/venue` : `${pinned} pin${pinned===1?"":"s"}`)
-      : "No pins yet. Add a city or full venue address on the gig.";
-  }
-  if (missing) {
-    const need = events.filter(e => !Number.isFinite(Number(e.lat)) || !Number.isFinite(Number(e.lng)));
-    (async () => {
-      for (const e of need) {
-        // await geocodeClient(e); // disabled — Nominatim was bad
-        await new Promise(r => setTimeout(r, 1100));
-      }
-      if (upcomingView === "map") drawGigMap(upcomingEvents());
-    })();
   }
 }
 function renderMembers() {
@@ -546,17 +489,6 @@ async function setDot(iso, status) {
   } catch (err) { toast(err.message); }
 }
 
-if ($("regeocodeBtn")) {
-  $("regeocodeBtn").style.display = isAdmin() ? "" : "none";
-  $("regeocodeBtn").onclick = async () => {
-    if (!confirm("Re-pin every gig using Google?")) return;
-    try {
-      const r = await api("/api/admin/regeocode", { method: "POST" });
-      await loadState();
-      toast("Re-pinned " + (r.fixed || 0) + " gigs");
-    } catch (err) { toast(err.message); }
-  };
-}
 document.addEventListener("click", async (e) => {
   if (e.target.id === "deleteBandBtn") {
     const b = currentBand();
@@ -582,7 +514,12 @@ document.addEventListener("click", async (e) => {
   const uf = e.target.closest("[data-upfilter]");
   if (uf) { upcomingFilter = uf.dataset.upfilter; upcomingShown = 10; renderUpcoming(); return; }
   const uv = e.target.closest(".upcoming-view");
-  if (uv) { upcomingView = uv.dataset.upview; renderUpcoming(); return; }
+  if (uv) {
+    upcomingView = uv.dataset.upview;
+    renderUpcoming();
+    if ($("regeocodeBtn")) $("regeocodeBtn").style.display = (upcomingView === "map" && isAdmin()) ? "" : "none";
+    return;
+  }
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; upcomingShown = 10; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
@@ -818,17 +755,6 @@ if ($("evNoteAdd")) $("evNoteAdd").onclick = async () => {
     await loadEventNotes(notesEventId);
   } catch (err) { toast(err.message); }
 };
-if ($("regeocodeBtn")) {
-  $("regeocodeBtn").style.display = isAdmin() ? "" : "none";
-  $("regeocodeBtn").onclick = async () => {
-    if (!confirm("Re-pin every gig using Google?")) return;
-    try {
-      const r = await api("/api/admin/regeocode", { method: "POST" });
-      await loadState();
-      toast("Re-pinned " + (r.fixed || 0) + " gigs");
-    } catch (err) { toast(err.message); }
-  };
-}
 document.addEventListener("click", async (e) => {
   if (e.target.dataset.noteEdit && notesEventId) {
     const cur = e.target.closest(".note-item")?.querySelector(".note-text")?.textContent || "";

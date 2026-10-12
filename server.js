@@ -44,25 +44,7 @@ function httpsGet(url) {
     }).on("error", reject);
   });
 }
-async function geocodePlace(title, venue) {
-  const q = [venue, title, "USA"].filter(Boolean).join(", ").trim();
-  if (q.length < 5) return { lat: null, lng: null };
-  const key = process.env.GOOGLE_MAPS_KEY;
-  if (!key) {
-    console.error("geocode: GOOGLE_MAPS_KEY not set");
-    return { lat: null, lng: null };
-  }
-  try {
-    const url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + encodeURIComponent(q) + "&key=" + key;
-    const raw = await httpsGet(url);
-    const data = JSON.parse(raw || "{}");
-    const loc = data.results && data.results[0] && data.results[0].geometry && data.results[0].geometry.location;
-    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
-      return { lat: Number(loc.lat), lng: Number(loc.lng) };
-    }
-  } catch (err) { console.error("geocode", err.message); }
-  return { lat: null, lng: null };
-}
+
 
 function parseBirthday(v) {
   if (!v) return null;
@@ -363,22 +345,6 @@ app.delete("/api/bands/:id", auth, async (req, res) => {
 });
 
 
-app.post("/api/admin/regeocode", auth, async (req, res) => {
-  try {
-    const rows = (await pool.query("SELECT id, title, venue, address FROM events")).rows;
-    let fixed = 0;
-    for (const e of rows) {
-      const q = e.address || e.venue;
-      if (!q) continue;
-      const geo = await geocodePlace(e.title, q);
-      if (geo.lat != null && geo.lng != null) {
-        await pool.query("UPDATE events SET lat=$1, lng=$2 WHERE id=$3", [geo.lat, geo.lng, e.id]);
-        fixed++;
-      }
-    }
-    res.json({ ok: true, fixed });
-  } catch (err) { console.error(err); res.status(500).json({ error: "Re-pin failed" }); }
-});
 
 app.post("/api/events", auth, async (req, res) => {
   try {
@@ -392,8 +358,7 @@ app.post("/api/events", auth, async (req, res) => {
     let lat = Number.isFinite(Number(inLat)) ? Number(inLat) : null;
     let lng = Number.isFinite(Number(inLng)) ? Number(inLng) : null;
     if (lat == null || lng == null) {
-      const geo = await geocodePlace(ev.title, ev.address || ev.venue);
-      lat = geo.lat; lng = geo.lng;
+      lat = null; lng = null;
     }
     ev.lat = lat; ev.lng = lng;
     await pool.query(
@@ -421,8 +386,7 @@ app.put("/api/events/:id", auth, async (req, res) => {
     let lat = Number.isFinite(Number(inLat)) ? Number(inLat) : old.lat;
     let lng = Number.isFinite(Number(inLng)) ? Number(inLng) : old.lng;
     if ((lat == null || lng == null) && (nextTitle !== old.title || nextAddress !== old.address || nextVenue !== old.venue || lat == null || lng == null)) {
-      const geo = await geocodePlace(nextTitle, nextAddress || nextVenue);
-      lat = geo.lat; lng = geo.lng;
+      lat = null; lng = null;
     }
     await pool.query(
       `UPDATE events SET type=$1, title=$2, date=$3, start_time=$4, end_time=$5, venue=$6, address=$7, notes=$8, band_id=$9, lat=$10, lng=$11 WHERE id=$12`,
