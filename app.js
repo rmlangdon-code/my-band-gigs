@@ -497,6 +497,8 @@ function openEventModal(dateISO, eventId, asCopy) {
   fillTimeSelect($("evStart"), ev ? formatTime24to12(ev.start) : "7:00 PM");
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
+  if ($("evLat")) $("evLat").value = (ev && Number.isFinite(Number(ev.lat))) ? String(ev.lat) : "";
+  if ($("evLng")) $("evLng").value = (ev && Number.isFinite(Number(ev.lng))) ? String(ev.lng) : "";
   const availDate = ev?.date || dateISO || $("evDate").value;
   const mine = getAvail(ev?.bandId || $("evBand").value || state.currentBandId, state.currentUserId, availDate);
   const bandForAvail = ev?.bandId || $("evBand").value || state.currentBandId;
@@ -525,7 +527,9 @@ async function saveEvent() {
     bandId: $("evBand").value, type: $("evType").value, title: $("evTitle").value.trim(),
     date: parseMDY($("evDate").value) || $("evDate").value,
     start: parse12to24($("evStart").value), end: parse12to24($("evEnd").value),
-    venue: $("evVenue").value.trim(), notes: ""
+    venue: $("evVenue").value.trim(), notes: "",
+    lat: $("evLat") && $("evLat").value.trim() ? Number($("evLat").value) : null,
+    lng: $("evLng") && $("evLng").value.trim() ? Number($("evLng").value) : null
   };
   try {
     if (editingEventId && !duplicating) await api("/api/events/" + editingEventId, { method: "PUT", body: payload });

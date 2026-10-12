@@ -354,19 +354,24 @@ app.delete("/api/bands/:id", auth, async (req, res) => {
 
 app.post("/api/events", auth, async (req, res) => {
   try {
-    const { bandId, type, title, date, start, end, venue, notes } = req.body;
+    const { bandId, type, title, date, start, end, venue, notes, lat: inLat, lng: inLng } = req.body;
     if (!(await isAdminOf(req.user.id, bandId))) return res.status(403).json({ error: "Only admins can add gigs and rehearsals" });
     const ev = {
       id: id(), bandId, type: type === "rehearsal" ? "rehearsal" : "gig",
       title: (title || (type === "rehearsal" ? "Rehearsal" : "Gig")).trim(),
       date, start, end, venue: venue || "", notes: notes || ""
     };
-    const geo = await geocodePlace(ev.title, ev.venue);
-    ev.lat = geo.lat; ev.lng = geo.lng;
+    let lat = Number.isFinite(Number(inLat)) ? Number(inLat) : null;
+    let lng = Number.isFinite(Number(inLng)) ? Number(inLng) : null;
+    if (lat == null || lng == null) {
+      const geo = await geocodePlace(ev.title, ev.venue);
+      lat = geo.lat; lng = geo.lng;
+    }
+    ev.lat = lat; ev.lng = lng;
     await pool.query(
       `INSERT INTO events (id, band_id, type, title, date, start_time, end_time, venue, notes, lat, lng)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-      [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes, geo.lat, geo.lng]
+      [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes, lat, lng]
     );
     res.json(ev);
     const band = (await pool.query("SELECT short, name FROM bands WHERE id=$1", [bandId])).rows[0];
@@ -381,11 +386,12 @@ app.put("/api/events/:id", auth, async (req, res) => {
     if (!found.rowCount) return res.status(404).json({ error: "Event not found" });
     const old = found.rows[0];
     if (!(await isAdminOf(req.user.id, old.band_id))) return res.status(403).json({ error: "Only admins can edit events" });
-    const { type, title, date, start, end, venue, notes, bandId } = req.body;
+    const { type, title, date, start, end, venue, notes, bandId, lat: inLat, lng: inLng } = req.body;
     const nextTitle = title || old.title;
     const nextVenue = venue ?? old.venue;
-    let lat = old.lat, lng = old.lng;
-    if (nextTitle !== old.title || nextVenue !== old.venue || lat == null || lng == null) {
+    let lat = Number.isFinite(Number(inLat)) ? Number(inLat) : old.lat;
+    let lng = Number.isFinite(Number(inLng)) ? Number(inLng) : old.lng;
+    if ((lat == null || lng == null) && (nextTitle !== old.title || nextVenue !== old.venue || lat == null || lng == null)) {
       const geo = await geocodePlace(nextTitle, nextVenue);
       lat = geo.lat; lng = geo.lng;
     }
