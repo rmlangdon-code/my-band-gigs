@@ -315,6 +315,9 @@ function renderUpcoming() {
   }
 }
 async function geocodeClient(e) {
+  // Disabled: Nominatim was overwriting Google pins with bad results.
+  return { lat: null, lng: null };
+  /* original Nominatim code removed
   const q = [e.address || e.venue, e.title, "USA"].filter(Boolean).join(", ");
   if (q.length < 5) return null;
   try {
@@ -376,7 +379,7 @@ async function drawGigMap(events) {
     const need = events.filter(e => !Number.isFinite(Number(e.lat)) || !Number.isFinite(Number(e.lng)));
     (async () => {
       for (const e of need) {
-        await geocodeClient(e);
+        // await geocodeClient(e); // disabled — Nominatim was bad
         await new Promise(r => setTimeout(r, 1100));
       }
       if (upcomingView === "map") drawGigMap(upcomingEvents());
