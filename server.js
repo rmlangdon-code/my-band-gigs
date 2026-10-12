@@ -34,6 +34,27 @@ app.use(express.json());
 if (PUBLIC_DIR) app.use(express.static(PUBLIC_DIR));
 
 const id = () => crypto.randomUUID();
+const https = require("https");
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { "User-Agent": "MyBandGigs/1.0 (calendar)" } }, res => {
+      let d = "";
+      res.on("data", c => d += c);
+      res.on("end", () => resolve(d));
+    }).on("error", reject);
+  });
+}
+async function geocodePlace(title, venue) {
+  const q = [venue, title, "USA"].filter(Boolean).join(", ").trim();
+  if (q.length < 5) return { lat: null, lng: null };
+  try {
+    const raw = await httpsGet("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us,ca&q=" + encodeURIComponent(q));
+    const arr = JSON.parse(raw || "[]");
+    if (arr[0] && arr[0].lat) return { lat: Number(arr[0].lat), lng: Number(arr[0].lon) };
+  } catch (err) { console.error("geocode", err.message); }
+  return { lat: null, lng: null };
+}
+
 function parseBirthday(v) {
   if (!v) return null;
   const s = String(v).trim();
@@ -157,6 +178,8 @@ async function initDb() {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS cal_token TEXT;
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
     CREATE TABLE IF NOT EXISTS event_notes (
       id TEXT PRIMARY KEY,
       event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
@@ -282,7 +305,7 @@ app.get("/api/state", auth, async (req, res) => {
     const bandIds = [...new Set(memberships.map(m => m.bandId))];
     const bands = bandIds.length ? (await pool.query("SELECT * FROM bands WHERE id = ANY($1)", [bandIds])).rows : [];
     const events = bandIds.length ? (await pool.query(
-      `SELECT id, band_id AS "bandId", type, title, date::text, start_time AS start, end_time AS "end", venue, notes
+      `SELECT id, band_id AS "bandId", type, title, date::text, start_time AS start, end_time AS "end", venue, notes, lat, lng
        FROM events WHERE band_id = ANY($1) ORDER BY date, start_time`, [bandIds]
     )).rows : [];
     const availRows = bandIds.length ? (await pool.query(
@@ -338,10 +361,12 @@ app.post("/api/events", auth, async (req, res) => {
       title: (title || (type === "rehearsal" ? "Rehearsal" : "Gig")).trim(),
       date, start, end, venue: venue || "", notes: notes || ""
     };
+    const geo = await geocodePlace(ev.title, ev.venue);
+    ev.lat = geo.lat; ev.lng = geo.lng;
     await pool.query(
-      `INSERT INTO events (id, band_id, type, title, date, start_time, end_time, venue, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes]
+      `INSERT INTO events (id, band_id, type, title, date, start_time, end_time, venue, notes, lat, lng)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [ev.id, ev.bandId, ev.type, ev.title, ev.date, ev.start, ev.end, ev.venue, ev.notes, geo.lat, geo.lng]
     );
     res.json(ev);
     const band = (await pool.query("SELECT short, name FROM bands WHERE id=$1", [bandId])).rows[0];
@@ -357,10 +382,17 @@ app.put("/api/events/:id", auth, async (req, res) => {
     const old = found.rows[0];
     if (!(await isAdminOf(req.user.id, old.band_id))) return res.status(403).json({ error: "Only admins can edit events" });
     const { type, title, date, start, end, venue, notes, bandId } = req.body;
+    const nextTitle = title || old.title;
+    const nextVenue = venue ?? old.venue;
+    let lat = old.lat, lng = old.lng;
+    if (nextTitle !== old.title || nextVenue !== old.venue || lat == null || lng == null) {
+      const geo = await geocodePlace(nextTitle, nextVenue);
+      lat = geo.lat; lng = geo.lng;
+    }
     await pool.query(
-      `UPDATE events SET type=$1, title=$2, date=$3, start_time=$4, end_time=$5, venue=$6, notes=$7, band_id=$8 WHERE id=$9`,
-      [type || old.type, title || old.title, date || old.date, start || old.start_time, end || old.end_time,
-       venue ?? old.venue, notes ?? old.notes, bandId || old.band_id, req.params.id]
+      `UPDATE events SET type=$1, title=$2, date=$3, start_time=$4, end_time=$5, venue=$6, notes=$7, band_id=$8, lat=$9, lng=$10 WHERE id=$11`,
+      [type || old.type, nextTitle, date || old.date, start || old.start_time, end || old.end_time,
+       nextVenue, notes ?? old.notes, bandId || old.band_id, lat, lng, req.params.id]
     );
     const next = {
       title: title || old.title,
@@ -392,6 +424,15 @@ app.delete("/api/events/:id", auth, async (req, res) => {
     res.json({ ok: true });
     notifyBand(old.band_id, { title: "Event deleted", body: old.title, eventId: "", date: old.date });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not delete event" }); }
+});
+
+app.post("/api/events/:id/geo", auth, async (req, res) => {
+  try {
+    const lat = Number(req.body.lat), lng = Number(req.body.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(400).json({ error: "Bad coordinates" });
+    await pool.query("UPDATE events SET lat=$1, lng=$2 WHERE id=$3", [lat, lng, req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: "Could not save map pin" }); }
 });
 
 app.post("/api/availability", auth, async (req, res) => {

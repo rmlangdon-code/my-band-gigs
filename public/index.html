@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My Band Gigs</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#e8b84a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -69,8 +70,14 @@
         <div class="legend" style="margin-top:0">
           <button class="btn upcoming-filter on" data-upfilter="all">All</button>
           <button class="btn upcoming-filter" data-upfilter="mine">My gigs only</button>
+          <button class="btn upcoming-view on" data-upview="list">List</button>
+          <button class="btn upcoming-view" data-upview="map">Map</button>
         </div>
         <div id="upcoming" class="event-list"></div>
+        <div id="upcomingMapWrap" style="display:none">
+          <div id="upcomingMap"></div>
+          <p class="hint" id="mapHint" style="margin-top:8px"></p>
+        </div>
       </div>
       <div class="card" id="membersCard" style="margin-top:12px">
         <div class="section-label">Members</div>
@@ -200,6 +207,7 @@
     <div id="miniDays" class="mini-cal-days"></div>
   </div>
   <div class="toast-wrap" id="toasts"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

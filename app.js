@@ -6,6 +6,8 @@ let viewMonth = new Date().getMonth();
 let editingEventId = null;
 let upcomingShown = 10;
 let upcomingFilter = "all";
+let upcomingView = "list";
+let gigMap = null;
 let didDeepLink = false;
 let duplicating = false;
 
@@ -278,27 +280,108 @@ function renderCalendar() {
     </div>`;
   }).join("");
 }
-function renderUpcoming() {
-  document.querySelectorAll(".upcoming-filter").forEach(b => b.classList.toggle("on", b.dataset.upfilter === upcomingFilter));
+function upcomingEvents() {
   const today = toISODate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   let all = eventsForBand(state.currentBandId).filter(e => e.date >= today);
   if (upcomingFilter === "mine") all = all.filter(e => getAvail(e.bandId, state.currentUserId, e.date) === "AVAILABLE");
+  return all;
+}
+function renderUpcoming() {
+  document.querySelectorAll(".upcoming-filter").forEach(b => b.classList.toggle("on", b.dataset.upfilter === upcomingFilter));
+  document.querySelectorAll(".upcoming-view").forEach(b => b.classList.toggle("on", b.dataset.upview === upcomingView));
+  const all = upcomingEvents();
   const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
-  const more = all.length > upcomingShown
-    ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
-    : "";
-  $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
-    <div class="event" data-eid="${e.id}">
-      <h3 class="${e.type}">${eventLabel(e)}</h3>
-      <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
-      <div class="meta">${e.venue || "Venue TBD"}</div>
-      ${admin ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn" data-edit="${e.id}">Edit</button>
-        <button class="btn" data-dup="${e.id}">Duplicate</button>
-        <button class="btn btn-danger" data-del="${e.id}">Delete</button>
-      </div>` : ""}
-    </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
+  const listOn = upcomingView !== "map";
+  if ($("upcoming")) $("upcoming").style.display = listOn ? "" : "none";
+  if ($("upcomingMapWrap")) $("upcomingMapWrap").style.display = listOn ? "none" : "block";
+  if (listOn) {
+    const more = all.length > upcomingShown
+      ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
+      : "";
+    $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
+      <div class="event" data-eid="${e.id}">
+        <h3 class="${e.type}">${eventLabel(e)}</h3>
+        <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
+        <div class="meta">${e.venue || "Venue TBD"}</div>
+        ${admin ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn" data-edit="${e.id}">Edit</button>
+          <button class="btn" data-dup="${e.id}">Duplicate</button>
+          <button class="btn btn-danger" data-del="${e.id}">Delete</button>
+        </div>` : ""}
+      </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
+  } else {
+    drawGigMap(all);
+  }
+}
+async function geocodeClient(e) {
+  const q = [e.venue, e.title, "USA"].filter(Boolean).join(", ");
+  if (q.length < 5) return null;
+  try {
+    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us,ca&q=" + encodeURIComponent(q), {
+      headers: { "Accept": "application/json" }
+    });
+    const arr = await res.json();
+    if (!arr[0]) return null;
+    const lat = Number(arr[0].lat), lng = Number(arr[0].lon);
+    e.lat = lat; e.lng = lng;
+    api("/api/events/" + e.id + "/geo", { method: "POST", body: { lat, lng } }).catch(() => {});
+    return { lat, lng };
+  } catch { return null; }
+}
+async function drawGigMap(events) {
+  if (typeof L === "undefined" || !$("upcomingMap")) {
+    if ($("mapHint")) $("mapHint").textContent = "Map library did not load.";
+    return;
+  }
+  if (!gigMap) {
+    gigMap = L.map("upcomingMap", { scrollWheelZoom: true }).setView([39.8, -98.5], 4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(gigMap);
+  }
+  if (gigMap._mbgLayer) gigMap.removeLayer(gigMap._mbgLayer);
+  const layer = L.layerGroup();
+  gigMap._mbgLayer = layer;
+  let pinned = 0, missing = 0;
+  for (const e of events) {
+    let lat = Number(e.lat), lng = Number(e.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      missing++;
+      continue;
+    }
+    pinned++;
+    const m = L.marker([lat, lng]);
+    m.bindPopup(`<strong>${eventLabel(e)}</strong><br>${formatMDY(e.date)}<br>${e.venue || ""}`);
+    m.on("click", () => openEventModal(null, e.id));
+    m.addTo(layer);
+  }
+  layer.addTo(gigMap);
+  setTimeout(() => gigMap.invalidateSize(), 80);
+  if (pinned) {
+    const pts = [];
+    layer.eachLayer(l => { if (l.getLatLng) pts.push(l.getLatLng()); });
+    if (pts.length === 1) gigMap.setView(pts[0], 8);
+    else if (pts.length > 1) gigMap.fitBounds(L.latLngBounds(pts).pad(0.25));
+  } else {
+    gigMap.setView([39.8, -98.5], 4);
+  }
+  if ($("mapHint")) {
+    $("mapHint").textContent = pinned
+      ? (missing ? `${pinned} pin${pinned===1?"":"s"} · ${missing} need a city/venue` : `${pinned} pin${pinned===1?"":"s"}`)
+      : "No pins yet. Add a city or full venue address on the gig.";
+  }
+  if (missing) {
+    const need = events.filter(e => !Number.isFinite(Number(e.lat)) || !Number.isFinite(Number(e.lng)));
+    (async () => {
+      for (const e of need) {
+        await geocodeClient(e);
+        await new Promise(r => setTimeout(r, 1100));
+      }
+      if (upcomingView === "map") drawGigMap(upcomingEvents());
+    })();
+  }
 }
 function renderMembers() {
   if (!$("members")) return;
@@ -493,6 +576,8 @@ document.addEventListener("click", async (e) => {
   if (e.target.id === "showMoreUpcoming") { upcomingShown += 10; renderUpcoming(); return; }
   const uf = e.target.closest("[data-upfilter]");
   if (uf) { upcomingFilter = uf.dataset.upfilter; upcomingShown = 10; renderUpcoming(); return; }
+  const uv = e.target.closest(".upcoming-view");
+  if (uv) { upcomingView = uv.dataset.upview; renderUpcoming(); return; }
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; upcomingShown = 10; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");

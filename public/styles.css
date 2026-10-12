@@ -411,3 +411,6 @@ body:not(.is-admin) #evVenue{
   text-align:left !important;
   font-size:16px !important;
 }
+
+#upcomingMap{height:min(70vh,520px);width:100%;border-radius:12px;border:1px solid var(--line);z-index:1}
+.upcoming-view.on,.upcoming-filter.on{border-color:var(--accent);background:rgba(232,184,74,.12)}
