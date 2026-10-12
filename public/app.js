@@ -295,25 +295,21 @@ function renderUpcoming() {
   const all = upcomingEvents();
   const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
-  if ($("upcoming")) $("upcoming").style.display = listOn ? "" : "none";
-  
-  if (listOn) {
-    const more = all.length > upcomingShown
-      ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
-      : "";
-    $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
-      <div class="event" data-eid="${e.id}">
-        <h3 class="${e.type}">${eventLabel(e)}</h3>
-        <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
-        <div class="meta">${e.venue || "Venue TBD"}</div>
-        ${admin ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn" data-edit="${e.id}">Edit</button>
-          <button class="btn" data-dup="${e.id}">Duplicate</button>
-          <button class="btn btn-danger" data-del="${e.id}">Delete</button>
-        </div>` : ""}
-      </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
-  } else {
-  }
+  if ($("upcoming")) $("upcoming").style.display = "";
+  const more = all.length > upcomingShown
+    ? `<button class="btn" id="showMoreUpcoming" style="width:100%;margin-top:8px">Show more (${all.length - upcomingShown})</button>`
+    : "";
+  $("upcoming").innerHTML = upcoming.length ? upcoming.map(e => `
+    <div class="event" data-eid="${e.id}">
+      <h3 class="${e.type}">${eventLabel(e)}</h3>
+      <div class="meta">${e.type.toUpperCase()} · ${formatMDY(e.date)} · ${formatTime24to12(e.start)} – ${formatTime24to12(e.end)}</div>
+      <div class="meta">${e.venue || "Venue TBD"}</div>
+      ${admin ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn" data-edit="${e.id}">Edit</button>
+        <button class="btn" data-dup="${e.id}">Duplicate</button>
+        <button class="btn btn-danger" data-del="${e.id}">Delete</button>
+      </div>` : ""}
+    </div>`).join("") + more : `<div class="hint">No upcoming events.</div>`;
 }
 function renderMembers() {
   if (!$("members")) return;
