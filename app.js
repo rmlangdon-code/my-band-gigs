@@ -498,8 +498,7 @@ function openEventModal(dateISO, eventId, asCopy) {
   fillTimeSelect($("evEnd"), ev ? formatTime24to12(ev.end) : "10:00 PM");
   $("evVenue").value = ev?.venue || "";
   if ($("evAddress")) $("evAddress").value = ev?.address || "";
-  if ($("evLat")) $("evLat").value = (ev && Number.isFinite(Number(ev.lat))) ? String(ev.lat) : "";
-  if ($("evLng")) $("evLng").value = (ev && Number.isFinite(Number(ev.lng))) ? String(ev.lng) : "";
+
   const availDate = ev?.date || dateISO || $("evDate").value;
   const mine = getAvail(ev?.bandId || $("evBand").value || state.currentBandId, state.currentUserId, availDate);
   const bandForAvail = ev?.bandId || $("evBand").value || state.currentBandId;
@@ -531,8 +530,7 @@ async function saveEvent() {
     venue: $("evVenue").value.trim(),
     address: ($("evAddress") && $("evAddress").value.trim()) || "",
     notes: "",
-    lat: $("evLat") && $("evLat").value.trim() ? Number($("evLat").value) : null,
-    lng: $("evLng") && $("evLng").value.trim() ? Number($("evLng").value) : null
+
   };
   try {
     if (editingEventId && !duplicating) await api("/api/events/" + editingEventId, { method: "PUT", body: payload });
