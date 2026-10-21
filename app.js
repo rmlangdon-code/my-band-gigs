@@ -213,7 +213,6 @@ function openDeepLink() {
 async function loadState() {
   // ensure re-pin button visibility after data loads
   setTimeout(() => {
-    if ($("regeocodeBtn")) $("regeocodeBtn").style.display = (upcomingView === "map" && isAdmin()) ? "" : "none";
   }, 50);
   const data = await api("/api/state");
   if (data.events) data.events = data.events.map(e => ({ ...e, date: normDate(e.date) }));
@@ -291,7 +290,6 @@ function upcomingEvents() {
 }
 function renderUpcoming() {
   document.querySelectorAll(".upcoming-filter").forEach(b => b.classList.toggle("on", b.dataset.upfilter === upcomingFilter));
-  document.querySelectorAll(".upcoming-view").forEach(b => b.classList.toggle("on", b.dataset.upview === upcomingView));
   const all = upcomingEvents();
   const upcoming = all.slice(0, upcomingShown);
   const admin = isAdmin();
@@ -509,13 +507,6 @@ document.addEventListener("click", async (e) => {
   if (e.target.id === "showMoreUpcoming") { upcomingShown += 10; renderUpcoming(); return; }
   const uf = e.target.closest("[data-upfilter]");
   if (uf) { upcomingFilter = uf.dataset.upfilter; upcomingShown = 10; renderUpcoming(); return; }
-  const uv = e.target.closest(".upcoming-view");
-  if (uv) {
-    upcomingView = uv.dataset.upview;
-    renderUpcoming();
-    if ($("regeocodeBtn")) $("regeocodeBtn").style.display = (upcomingView === "map" && isAdmin()) ? "" : "none";
-    return;
-  }
   const band = e.target.closest("[data-band]");
   if (band) { state.currentBandId = band.dataset.band; upcomingShown = 10; $("bandMenu")?.classList.remove("open"); renderAll(); return; }
   const dot = e.target.closest("[data-dot]");
