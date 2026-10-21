@@ -12,7 +12,7 @@ button{cursor:pointer}
 .app{max-width:1180px;margin:0 auto;padding:18px 16px 80px;overflow-x:hidden}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 18px}
 .brand{display:flex;align-items:center;gap:10px}
-.logo{min-width:42px;height:38px;border-radius:10px;overflow:hidden;display:grid;place-items:center}
+.logo{width:42px;height:42px;min-width:42px;flex:0 0 42px;border-radius:10px;overflow:hidden}
 .brand h1{font-size:16px;margin:0}
 .brand small{color:var(--muted);display:block;font-size:11px}
 .top-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
