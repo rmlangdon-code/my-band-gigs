@@ -480,7 +480,8 @@ app.post("/api/members", auth, async (req, res) => {
     }
     for (const bid of bandIds) {
       await pool.query(
-        `INSERT INTO memberships (user_id, band_id, role) VALUES ($1,$2,'member') ON CONFLICT (user_id, band_id) DO NOTHING`,
+        `INSERT INTO memberships (user_id, band_id, role) VALUES ($1,$2,'member')
+         ON CONFLICT (user_id, band_id) DO UPDATE SET role='member'`,
         [user.id, bid]
       );
     }
@@ -554,6 +555,12 @@ app.post("/api/setup", async (req, res) => {
     const user = (await pool.query("SELECT * FROM users WHERE setup_token=$1", [token])).rows[0];
     if (!user) return res.status(400).json({ error: "This setup link is invalid or already used." });
     await pool.query("UPDATE users SET password_hash=$1, setup_token=NULL WHERE id=$2", [await bcrypt.hash(password, 10), user.id]);
+    // Setup link is only for invited members. Demote on any band they did not create.
+    await pool.query(
+      `UPDATE memberships SET role='member'
+       WHERE user_id=$1 AND band_id NOT IN (SELECT id FROM bands WHERE created_by=$1)`,
+      [user.id]
+    );
     res.json({ token: sign(user), user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) { console.error(err); res.status(500).json({ error: "Could not finish setup" }); }
 });
