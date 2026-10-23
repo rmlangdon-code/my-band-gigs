@@ -199,14 +199,12 @@ input[type="date"]::-webkit-datetime-edit-year-field{color:#fff;-webkit-text-fil
 .note-text{margin-top:4px;color:#fff;white-space:pre-wrap}
 
 .glance{
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
   font-size:11px;
-  line-height:1.2;
+  line-height:1.15;
   cursor:pointer;
   color:#9fd59f;
 }
+.glance > div{white-space:nowrap}
 .date-wrap{position:relative}
 .date-wrap input[type="date"]{
   position:absolute !important;
